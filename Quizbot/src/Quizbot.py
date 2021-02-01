@@ -15,23 +15,10 @@ from mutagen.mp3 import MP3
 from pydub import AudioSegment
 from shutil import copyfile
 
+import Config
+import QuizSelector as ui
 
-# 개발자 페이지에서 봇에 대한 토큰 텍스트를 가져온 뒤, TOKEN에 대입하자
-TOKEN = "ODA1MjE1NjU5NjMzOTM0NTE3.YBXphQ.aRZPxSMFofc7F1L1NdzL58o5sxQ"
-BOT_PREFIX = "^" #명령어 prefix
-QUIZ_PATH = "C:/Users/HOME/Desktop/develop/vscode/workspace/quizbot/resource/quizData/"  # 게임 소스폴더
-BGM_PATH = "C:/Users/HOME/Desktop/develop/vscode/workspace/quizbot/resource/bgm/"  # 효과음 폴더
-# C드라이브에 다운로드하려고하면 Permission Denied 에러 떠서 다른 폴더로...
-SAVE_PATH = "C:/Users/HOME/Desktop/develop/vscode/workspace/quizbot/resource/download/" #유튜브 음악 다운로드 폴더
-TMP_PATH = "C:/Users/HOME/Desktop/develop/vscode/workspace/quizbot/resource/tmp/" #임시폴더
-DATA_PATH = "C:/Users/HOME/Desktop/develop/vscode/workspace/quizbot/resource/data/" #데이터 저장 폴더
 
-#상수 선언
-alphabetList = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"
-                    , "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
-emojiNumberList = [ "0️⃣", "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
-emojiOXList = ["⭕", "❌"] #ox퀴즈용
-LIST_PER_PAGE = 5
 
 #enum 선언
 class GAME_STEP(enumerate):
@@ -67,45 +54,18 @@ class BGM_TYPE(enumerate):
     LONGTIMER = 9
 
 
-class EMOJI_ICON(enumerate): #이모지
-    PAGE_PREV = "🔺"
-    PAGE_NEXT = "🔻"
-    PAGE_PARENT = "↩️"
-    PLAY_LEFT = "⏪"
-    PLAY_PAUSE_AND_RESUME = "⏯️"
-    PLAY_STOP = "⏹️"
-    PLAY_RIGHT = "⏩" 
-    PLAY_SUB_FAST = "⬅️" 
-    PLAY_SUB_SLOW = "➡️" 
-    PLAY_AUDIO_FAST = "◀️" 
-    PLAY_AUDIO_SLOW = "▶️" 
-    ICON_FOLDER = "📁"
-
 #클래스 선언
-
-#봇이 있는 디스코드 서버 데이터
-class GuildData:
+class GuildData: #봇이 있는 디스코드 서버 데이터
     def __init__(self, guild):
         self._guildID = guild.id #서버 id 저장
-        self._selectorData = SelectorData() #퀴즈 선택용
+        self._selectorData = ui.SelectorData() #퀴즈 선택용
         self._gameData = None #진행중인 퀴즈 데이터
-
-class SelectorData:
-    def __init__(self):
-        self._controlChannel = None #버튼 상호작용할 채널
-        self._nowPage = 0 #페이지 넘버
-        self._quizSelectorMessage = None #퀴즈 선택 embed 메시지
-        self._pageList = None #현재 표시된 퀴즈 목록
-        self._maxPage = 0 #최대 페이지
-        self._pathPoint = [] #경로 저장용
-        self._nowPlaying = "없음" #현재 진행중인 퀴즈
-        self._pageMap = dict() #뒤로가기 시 페이지 복구를 위한 경로별 마지막 페이지 해쉬맵
 
 class QUIZ:
     def __init__(self, guild, chatChannel, voiceChannel, gameName, roomOwner):
         self._chatChannel = chatChannel
         self._voiceChannel = voiceChannel
-        self._gameType = gameType
+        self._gameType =  0
         self._gameName = gameName
         self._nowQuiz = ""
         self._answerList = []
@@ -166,7 +126,7 @@ QUIZ_MAP = dict()  # 퀴즈 정보 저장용
 ########################
 
 
-bot = commands.Bot(command_prefix=BOT_PREFIX)  # 봇 커맨드 설정
+bot = commands.Bot(command_prefix=Config.BOT_PREFIX)  # 봇 커맨드 설정
 
 #Utility
 async def fadeIn(voice):
@@ -307,20 +267,6 @@ def convert(seconds): #초 값을 시,분,초 로 반환
 
     return hours, mins, seconds
 
-
-def isQuiz(fileName): #퀴즈 폴더인지 확인
-    fileName = fileName.lower()
-    if fileName.find("&quiz") != -1: 
-        return True
-    else:
-        return False
-
-def getIcon(fileName):
-    fileName = fileName.lower()
-    icon = fileName.split("&icon=")[1] #&quiz 뒤에있는 것이 아이콘 타입임
-    icon = icon.split("&")[0] #& 만나기 전까지 파싱, 즉 icon 값만 파싱
-
-    return icon #아이콘 반환
     
 
 #사전 정의 함수
@@ -333,78 +279,43 @@ def getGuildData(guild):
 
     return guildData
 
-async def createUI(channel): #UI생성
-    quizListEmbed = discord.Embed(
-            title="[                                                퀴즈 선택                                               ]", url=None, description="\n▽", color=discord.Color.dark_magenta())
-    quizListEmbed.set_author(name=bot.user, url="",
-                        icon_url=bot.user.avatar_url)
-
-
-    quizListMessage = await channel.send(embed=quizListEmbed)
-
-    await quizListMessage.add_reaction(EMOJI_ICON.PAGE_PREV)
-    i = 1
-    while i < 6: #1~5번 버튼만
-        await quizListMessage.add_reaction(emojiNumberList[i])
-        i += 1
-    await quizListMessage.add_reaction(EMOJI_ICON.PAGE_PARENT)
-    await quizListMessage.add_reaction(EMOJI_ICON.PAGE_NEXT)
-
-    return quizListMessage
-
-
-async def updatePage(message, guildData):
-    if message == None or guildData == None:
-        return
-
-    selectorData = guildData._selectorData #UI데이터 가져오기
-
+async def getNowAbsolutePath(selectorData): #퀴즈 선택창의 현재 경로를 가져옴
     searchPath = "" #현재 경로
 
     i = 0
-    while i < len(selectorData._pathPoint):
-        searchPath += selectorData._pathPoint[i] + "/" #퀴즈 경로 표시
+    while i < len(selectorData.pathPoint):
+        searchPath += selectorData.pathPoint[i] + "/"
         i += 1
     
-    allPath = QUIZ_PATH + searchPath #절대 경로
+    allPath = QUIZ_PATH + searchPath
+    return allPath
 
-    quizList = os.listdir(allPath) #현재 경로의 모든 퀴즈 가져오기
-
-    desc = "\n"+chr(173)+"\n" #embed에 표시할 메시지, chr(173)은 빈문자
-    selectorData.pageList = [] #로컬 저장 목록 초기화
-
-    tmpList = []
-    for tmpFile in quizList: #쓸모없는 파일은 무시
-        print(tmpFile)
-        if not os.path.isdir(allPath+tmpFile): #폴더가 아니면 패스
-            continue #다음 파일로
-        icon = EMOJI_ICON.ICON_FOLDER #아이콘, 기본은 폴더
-        icon = getIcon(tmpFile) #파일명으로 아이콘 가져와보기
-        fileName = tmpFile.split("&")[0] #실제 파일명만 긁어오기
-        tmpList.append(icon+" "+fileName) #파일 목록에 추가
-
-    selectorData._maxPage = math.ceil(len(tmpList) / LIST_PER_PAGE)   #최대 페이지 설정
-    pageIndex = selectorData._nowPage * LIST_PER_PAGE #표시 시작할 인덱스
-
-    i = 0
-    while i < LIST_PER_PAGE: #LIST_PER_PAGE 만큼 목록 표시
-        fileIndex = pageIndex + i
-        if fileIndex >= len(tmpList): #마지막 파일 도달하면 바로 break
-            break
-        fileData = tmpList[fileIndex]
-        selectorData.pageList.append(fileData) #저장 목록에 추가
-        i += 1
-        desc += emojiNumberList[i] + ".　" + str(fileData) + "\n　\n"
+async def somethingSelected(guild, selectIndex): #퀴즈 선택 객체에서 번호 상호 작용 시
     
-    selectorEmbed = discord.Embed(
-            title="[                                                🔍　퀴즈 선택                                               ]", url=None, description="\n"+desc+"\n"+chr(173), color=discord.Color.dark_magenta())
-    selectorEmbed.set_author(name=bot.user, url="",
-                        icon_url=bot.user.avatar_url)
-    selectorEmbed.set_footer(text=("🅿️　"+str(selectorData._nowPage+1)+" / "+str(selectorData._maxPage)+"　　|　　📂 퀴즈봇/"+searchPath)) #페이지 표시
+    guildData = getGuildData(guild)
+    selectorData = guildData._selectorData
 
-    selectorData._controlChannel = message.channel.id # 채널 갱신
-    selectorData._quizSelectorMessage = await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+    if selectIndex > len(selectorData.pageList): #만약 선택 가능 범위를 넘으면 return
+        return
+    
+    allPath = await getNowAbsolutePath(selectorData)  # 절대 경로 가져오기
+    selectText = selectorData.pageList[selectIndex-1]  # 선택한 텍스트 가져오기
+    if not os.path.isdir(allPath+selectText):  # 폴더가 아닐때
+        if isVideo(selectText):  # 선택한게 비디오 파일이면
+            print("비디오 재생, "+allPath + selectText)
+            playerData.subSync = 0
+            playerData.audioSync = 0
+            playerData.status = 2
+            playerData.nowPlaying = selectText
+            await updateController("")
+            playVideo(allPath + selectText)  # 해당 비디오 실행
+    else:  # 폴더면, 해당 폴더로 이동
+        playerData.lastPage = playerData.nowPage
+        # 새로운 폴더가 새로고침 됐으니깐 nowPage도 0
+        playerData.pathPoint.append(selectText)
+        playerData.nowPage = 0
 
+    await updatePage()
 
 def playBGM(voice, bgmType): #BGM 틀기
     try:
@@ -2337,8 +2248,6 @@ async def pingCommand(ctx):  # ping 테스트
 @bot.command(pass_context=False, aliases=["quiz", "퀴즈"])  # quiz 명령어 입력시
 async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
     if gamesrc == None:
-        selectorMessage = await createUI(ctx.channel) #UI생성
-
         guild = ctx.guild #서버
         guildData = getGuildData(guild)
         
