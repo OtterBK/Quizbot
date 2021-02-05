@@ -255,6 +255,7 @@ class QFrame:
         self._customFooter_text = ""
 
         self._image_visible = False #이미지 표시 여부
+        self._image_local = False #로컬 이미지 여부
         self._image_url = "" #이미지 url
 
         self._embedColor = discord.Color.magenta() #색상
@@ -332,6 +333,8 @@ class MainFrame(QFrame): #메인 화면
 
             if number == 1: #각 경우에 맞게 행동
                 await showFrame(message, CategorySelectFrame(Config.QUIZ_PATH), isPopUp=True) #카테고리 선택창 표시
+            elif number == 2: 
+                await showFrame(message, MultiplayFrame(), isPopUp=True) #멀티 플레이창 표시
             elif number == 3: 
                 await showFrame(message, SettingFrame(), isPopUp=True) #설정창 표시
             elif number == 4: 
@@ -545,6 +548,9 @@ class QuizInfoFrame(QFrame):
                 elif line.startswith("&typeName: "):
                     typeName = line.replace("&typeName: ", "").strip()
                     self._quizTypeName = typeName
+                elif line.startswith("&quizCount: "):
+                    quizCount = line.replace("&quizCount: ", "").strip()
+                    self._quizCnt = int(quizCount)
                 else:
                     infoText += line
             f.close()
@@ -718,6 +724,9 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
                 elif line.startswith("&typeName: "):
                     typeName = line.replace("&typeName: ", "").strip()
                     self._quizTypeName = typeName
+                elif line.startswith("&quizCount: "):
+                    quizCount = line.replace("&quizCount: ", "").strip()
+                    self._quizCnt = int(quizCount)
                 else:
                     infoText += line
             f.close()
@@ -1021,16 +1030,21 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         super().__init__() #frame 초기화
         self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_QUIZBOT +" 봇 정보　　　　]"
 
-        self._sub_visible = False
+        self._sub_visible = True
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + "\n"
+        self._sub_text += "봇 이름:　**" + "퀴즈봇2**\n"
+        self._sub_text += "봇 버전:　**" + Config.VERSION + "**\n"
+        self._sub_text += "제작 　:　**제육보끔#1916**\n"
+        self._sub_text += "패치일 :　" + Config.LAST_PATCH + "\n"
 
-        self.addMain(Config.EMOJI_ICON.ICON_LOCALPLAY + "** 로컬 플레이**")
-        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이**")
-        self.addMain(Config.EMOJI_ICON.ICON_HELP + "** 무언가**")
-        self.addMain(Config.EMOJI_ICON.ICON_SETTING + "** 설정**")
-        self.addMain(Config.EMOJI_ICON.ICON_INFO + "** 정보**")
+        self._main_visible = False
 
         self._notice_visible = True
-        self._notice_text = Config.EMOJI_ICON.PAGE_PREV + " " +Config.EMOJI_ICON.PAGE_NEXT + " 페이지 이동　" + chr(173) + "　" + Config.getEmojiFromNumber(1) + " ~ " + Config.getEmojiFromNumber(5) + " 선택"
+        self._notice_text = Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　otter6975@gmail.com\n"
+        #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n" 
+        self._notice_text += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
+    
 
         self._field_visible = False
 
@@ -1041,26 +1055,44 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         
         self._path_visible = False
 
-        self._image_visible = True
-        self._image_url = "https://user-images.githubusercontent.com/28488288/106536426-c48d4300-653b-11eb-97ee-445ba6bced9b.jpg"
+        self._image_visible = False
 
         self._embedColor = discord.Color.magenta() 
 
     async def action(self, reaction, user, selectorData): 
         await super().action(reaction, user, selectorData)
 
-        emoji = reaction.emoji
-        message = reaction.message
-        guild = message.guild
+class MultiplayFrame(QFrame): #멀티플레이 화면
+    def __init__(self):
+        super().__init__() #frame 초기화
+        self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_MULTIPLAY +" 멀티 플레이　　　　]"
 
-        number = Config.getNumberFromEmoji(emoji) #이모지에 대응하는 정수값 가져옴
-        if number != -1: #숫자 이모지라면
+        self._sub_visible = True
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + "　멀티 플레이란?\n" + chr(173) + "\n"
+        self._sub_text = "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
+        self._sub_text = "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
 
-            if number == 1: #각 경우에 맞게 행동
-                await showFrame(message, CategorySelectFrame(Config.QUIZ_PATH), isPopUp=True) #카테고리 선택창 표시
-            elif number == 4: 
-                await showFrame(message, SettingFrame(), isPopUp=True) #설정창 표시
+        self._main_visible = False
 
+        self._notice_visible = True
+        self._notice_text = Config.EMOJI_ICON.ICON_WARN + "　**멀티 플레이는 2월6일에 추가됩니다.**\n"
+    
+
+        self._field_visible = False
+
+        self._customFooter_visible = False
+
+        self._page_visible = True
+        
+        self._path_visible = True
+        self._path_text = "멀티 플레이/"
+
+        self._image_visible = False
+
+        self._embedColor = discord.Color.magenta() 
+
+    async def action(self, reaction, user, selectorData): 
+        await super().action(reaction, user, selectorData)
 
 
 #utility
@@ -1203,6 +1235,8 @@ def getClockIcon(leftTime, maxTime): #시계 아이콘 반환
         return Config.EMOJI_ICON.CLOCK_11
     elif clockType == 12:
         return Config.EMOJI_ICON.CLOCK_12
+    
+    return Config.EMOJI_ICON.CLOCK_0
 
 
 def getIcon(fileName):
@@ -1322,8 +1356,35 @@ async def setFrame(message, frame): #메시지에 해당 프레임을 설정
         return
 
     frame.paint(message) #프레임 표시 이벤트
+    selectorEmbed = getEmbedFromFrame(frame) 
 
-    guild = message.guild
+    await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+
+
+async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성
+    if not isSet: return
+
+    if channel == None or frame == None:
+        return
+
+    embed = getEmbedFromFrame(frame)
+
+    thumbnailFile = None
+    if frame._image_visible:
+        if frame._image_local: #로컬 이미지라면
+            filePath = frame._image_url
+            thumbnailFile = discord.File(filePath, filename="quizThumbnail.png")
+            embed.set_image(url="attachment://quizThumbnail.png")
+
+    message = None
+    if thumbnailFile != None: #로컬 이미지 사용시
+        message = await channel.send(file=thumbnailFile, embed=embed) # 메시지 객체 업데이트 
+    else:
+        message = await channel.send(embed=embed) # 메시지 객체 업데이트 
+    
+    frame.paint(message) #프레임 표시 이벤트
+
+def getEmbedFromFrame(frame): #frame으로 embed 생성
 
     title = frame._title_text
     mainList = frame._main_text
@@ -1386,7 +1447,8 @@ async def setFrame(message, frame): #메시지에 해당 프레임을 설정
             text_footer += Config.EMOJI_ICON.ICON_FOLDER + " " + str(frame._path_text)
 
     if frame._image_visible: #이미지
-        selectorEmbed.set_image(url=frame._image_url)
+        if not frame._image_local: #로컬 이미지 사용이 아니면
+            selectorEmbed.set_image(url=frame._image_url)
 
     # embed 추가 설정
     selectorEmbed.set_author(name=bot.user.name, url="",
@@ -1395,8 +1457,7 @@ async def setFrame(message, frame): #메시지에 해당 프레임을 설정
 
     selectorEmbed.set_footer(text=text_footer) #footer 설정 
 
-    message.channel.id # 채널 갱신
-    await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+    return selectorEmbed
 
 
 async def update(message): #해당 메시지 객체로 프레임 업데이트

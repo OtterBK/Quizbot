@@ -4,7 +4,7 @@ import random
 # 개발자 페이지에서 봇에 대한 토큰 텍스트를 가져온 뒤, TOKEN에 대입하자
 TOKEN = "Nzg4MDYwODMxNjYwMTE0MDEy.X9eA1w.n1ojFFe1evV4uxnmmwxFqLubhVY"
 
-BOT_PREFIX = "^" #명령어 prefix
+BOT_PREFIX = "!" #명령어 prefix
 
 QUIZ_PATH = "F:/quizbot/gameData/"  # 게임 소스폴더
 BGM_PATH = "F:/quizbot/bgm/"  # 효과음 폴더
@@ -15,6 +15,7 @@ OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 
 VERSION = "2.0 Alpha"
+LAST_PATCH = "21/02/05"
 
 
 #이모지 아이콘
@@ -70,7 +71,12 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_POINT_TO_RIGHT = "👉"
     ICON_WRONG = ["😡","🤮", "😅","🤬","🥵","🥶","😕","☹️","🤨","😐","😦","🤕"]
     ICON_MEDAL = ["🏅", "🥇", "🥈", "🥉"]
-    ICON_BLIND = "□"
+    ICON_BLIND = "◼"
+    ICON_PHONE = "📱"
+    ICON_MAIL = "📧"
+    ICON_GIT = "🌐"
+    ICON_FIX = "🛠️"
+    ICON_GOOD = "👍"
 
     CLOCK_0 = "🕛"
     CLOCK_1 = "🕐"
@@ -88,12 +94,12 @@ class EMOJI_ICON(enumerate): #이모지
 
     ICON_TYPE = "📚"
     ICON_TYPE_SONG = "🎧"
-    ICON_TYPE_SCRIPT = ""
-    ICON_TYPE_SELECT = ""
-    ICON_TYPE_PICTURE = ""
-    ICON_TYPE_OX = ""
-    ICON_TYPE_QNA = ""
-    ICON_TYPE_INTRO = ""
+    ICON_TYPE_SCRIPT = "🎙️"
+    ICON_TYPE_SELECT = "✔️"
+    ICON_TYPE_PICTURE = "🖼"
+    ICON_TYPE_OX = "⭕"
+    ICON_TYPE_QNA = "👨‍🎓"
+    ICON_TYPE_INTRO = "🎶"
     ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"
                     , "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
     NUMBER = [ "0️⃣", "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
