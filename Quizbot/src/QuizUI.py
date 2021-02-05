@@ -1069,8 +1069,8 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
 
         self._sub_visible = True
         self._sub_text = Config.EMOJI_ICON.ICON_LIST + "　멀티 플레이란?\n" + chr(173) + "\n"
-        self._sub_text = "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
-        self._sub_text = "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
+        self._sub_text += "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
+        self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
 
         self._main_visible = False
 
