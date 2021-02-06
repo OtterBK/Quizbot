@@ -1046,8 +1046,8 @@ class BotInfoFrame(QFrame): #봇 정보 화면
 
         self._notice_visible = True
         self._notice_text = Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n"
-        self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　otter6975@gmail.com\n"
-        self._notice_text += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　\n" + Config.EMAIL_ADDRESS + "\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
         #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n" 
         self._notice_text += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
     

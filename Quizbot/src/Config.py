@@ -2,7 +2,7 @@
 import random
 
 # 개발자 페이지에서 봇에 대한 토큰 텍스트를 가져온 뒤, TOKEN에 대입하자
-TOKEN = "Nzg4MDYwODMxNjYwMTE0MDEy.X9eA1w.n1ojFFe1evV4uxnmmwxFqLubhVY"
+TOKEN = ""
 
 BOT_PREFIX = "!" #명령어 prefix
 
@@ -17,6 +17,8 @@ PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
 VERSION = "2.0 Alpha"
 LAST_PATCH = "21/02/05"
+EMAIL_ADDRESS = "otter6975@gmail.com"
+BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
 
 
 #이모지 아이콘
