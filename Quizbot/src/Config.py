@@ -2,7 +2,6 @@
 import random
 
 # 개발자 페이지에서 봇에 대한 토큰 텍스트를 가져온 뒤, TOKEN에 대입하자
-TOKEN = ""
 
 BOT_PREFIX = "!" #명령어 prefix
 
@@ -20,6 +19,13 @@ LAST_PATCH = "21/02/05"
 EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
 
+TOKEN = ""
+try:
+    f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
+    TOKEN = f.readline().strip()
+    f.close()
+except:
+    print("토큰 로드 에러")
 
 #이모지 아이콘
 class EMOJI_ICON(enumerate): #이모지
