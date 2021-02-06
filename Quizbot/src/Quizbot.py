@@ -344,14 +344,14 @@ class Quiz:
             while voice.is_playing():  # 재생중이면
                 if(roundChecker != gameData._roundIndex): #이미 다음 라운드 넘어갔으면
                     return #리턴
-                await asyncio.sleep(0.72)  # 0.72초후 다시 확인 0.28초는 딜레이있어서 뺌
+                await asyncio.sleep(0.71)  # 0.71초후 다시 확인 0.29초는 딜레이있어서 뺌
                 playTime += 1 #재생 1초 +
                 leftTime = audioLength  - playTime #남은 길이
                 quizUIFrame._quizLeftTime = leftTime
                 
                 if hintType == 2: #힌트 타입이 자동일 떄
                     if playTime > audioLength // 2: #절반 이상 재생됐다면
-                        self.requestHint() #힌트 요청
+                        await self.requestHint() #힌트 요청
 
 
                 await quizUIFrame.update()
@@ -630,7 +630,7 @@ class Quiz:
         answer = answer.upper() #대문자로
         #answer = answer.replace(" ", "") #공백 제거
         answerLen = len(answer) #문자 길이
-        hintLen = math.ceil(answerLen / 4) #표시할 힌트 글자수
+        hintLen = math.ceil(answerLen / 5)+1#표시할 힌트 글자수
         hintStr = "" #힌트 문자열
 
         hintIndex = []
@@ -798,7 +798,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
                     if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
                         return
                     if hintType == 2: #힌트 타입이 자동일 떄
-                        self.requestHint() #힌트 요청
+                        await self.requestHint() #힌트 요청
                     await countdown(gameData, isLong=False)  #카운트 다운
 
     async def performance(self, user):
@@ -1096,7 +1096,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
                 
             if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER: #아직도 정답자 기다리는 중이면
                 if hintType == 2: #힌트 타입이 자동일 떄
-                    self.requestHint() #힌트 요청
+                    await self.requestHint() #힌트 요청
                 await countdown(self, isLong=False)
 
                 #카운트다운 끝난 후
