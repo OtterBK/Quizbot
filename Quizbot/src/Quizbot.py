@@ -99,6 +99,8 @@ class Quiz:
         self._thumbnail = None # 썸네일
         self._answerAuido = None #정답용 음악
 
+        self._answerPlayer  = ""#정답자
+
 
     def init(self):
         self._gameStep = GAME_STEP.START #게임 진행상태
@@ -213,6 +215,7 @@ class Quiz:
 
         voice = get(bot.voice_clients, guild=uiMessage.guild)  # 봇의 음성 객체 얻기
         
+        quizUIFrame._field_visible = True
         for player in self.sortScore(): #점수판 추가
             playerName = player.display_name
             quizUIFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
@@ -226,8 +229,6 @@ class Quiz:
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
-
-        quizUIFrame._field_visible = False
 
         quizUIFrame._customText_visible = False
         quizUIFrame._page_visible = False
@@ -276,32 +277,37 @@ class Quiz:
                 audioName = quizPath + "/" + question #실제 실행할 음악파일 경로
                 audioLength = 39 #오디오 길이
                 
-                if file.endswith(".wav"): #확장자 wav 일때
-                    f = sf.SoundFile(audioName) #오디오 파일 로드
-                    audioLength = len(f) / f.samplerate #오디오 길이
-                    f.close()
-                elif file.endswith(".mp3"): #확장자 mp3일때
-                    audio = MP3(audioName) 
-                    audio_info = audio.info
-                    length_in_secs = int(audio_info.length) #음악 총 길이
-                    if length_in_secs > gameData._trimLength + 1: #음악이 자를 시간 초과할 시, 자르기 시작
-                        song = AudioSegment.from_mp3( audioName ) #오디오 자르기 가져오기
-                        if length_in_secs > gameData._trimLength + 20: #노래 길이가 자를 시간 + 20만큼 크면
-                            #최적의 자르기 실행
-                            startTime = random.randrange(10, (length_in_secs - gameData._trimLength - 10)) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
+                try:
+                    if file.endswith(".wav"): #확장자 wav 일때
+                        f = sf.SoundFile(audioName) #오디오 파일 로드
+                        audioLength = len(f) / f.samplerate #오디오 길이
+                        f.close()
+                    elif file.endswith(".mp3"): #확장자 mp3일때
+                        audio = MP3(audioName) 
+                        audio_info = audio.info
+                        length_in_secs = int(audio_info.length) #음악 총 길이
+                        if length_in_secs > gameData._trimLength + 1: #음악이 자를 시간 초과할 시, 자르기 시작
+                            song = AudioSegment.from_mp3( audioName ) #오디오 자르기 가져오기
+                            if length_in_secs > gameData._trimLength + 20: #노래 길이가 자를 시간 + 20만큼 크면
+                                #최적의 자르기 실행
+                                startTime = random.randrange(10, (length_in_secs - gameData._trimLength - 10)) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
+                            else:
+                                startTime = random.randrange(0, length_in_secs - gameData._trimLength)
+
                             endTime = startTime + gameData._trimLength #지정된 길이만큼 자르기
+                            startTime *= 1000 #s 를 ms로
+                            endTime *= 1000 #s를 ms로
+
+                            extract = song[startTime:endTime] #노래 자르기
+                            audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경 
+
+                            extract.export(audioName) #임시 저장
+                            audioLength = gameData._trimLength
                         else:
-                            startTime = random.randrange(0, length_in_secs - gameData._trimLength)
-                        startTime *= 1000 #s 를 ms로
-                        endTime *= 1000 #s를 ms로
-
-                        extract = song[startTime:endTime] #노래 자르기
-                        audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경 
-
-                        extract.export(audioName) #임시 저장
-                        audioLength = gameData._trimLength
-                    else:
-                        audioLength = length_in_secs
+                            audioLength = length_in_secs
+                except:
+                    print("오디오 열기 에러, "+str(file))
+                    return None
 
                 return audioName, audioLength
 
@@ -314,6 +320,8 @@ class Quiz:
         gameData._gameStep = GAME_STEP.WAIT_FOR_ANSWER
 
         audioData = self.getAudio()
+        if audioData == None: #오디오 얻기 실패시
+            return False
         audioName = audioData[0]
         audioLength = audioData[1]
 
@@ -328,7 +336,7 @@ class Quiz:
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
             
-
+            voice.stop() #우선 보이스 중지
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
             await fadeIn(voice) #페이드인
             playTime = 2 #페이드인으로 2초 소비
@@ -353,6 +361,8 @@ class Quiz:
                     print("fast end")
                     voice.stop()
                     break # 재생시간 초과면 break
+        
+        return True
 
     async def showAnswer(self, isWrong=False): #정답 공개, isWrong 은 오답여부
         gameData = self
@@ -379,10 +389,12 @@ class Quiz:
 
         answerFrame._title_visible = True
         if isWrong: #오답일 시 
+            playBGM(voice, BGM_TYPE.FAIL)
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.getRandomWrongIcon() +" 정답 공개　　　　]"
             answerFrame._embedColor = discord.Color.red()
         else:
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
@@ -400,7 +412,7 @@ class Quiz:
         answerFrame._field_visible = True
         for player in self.sortScore(): #점수판 추가
             playerName = player.display_name
-            quizUIFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
+            answerFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
 
         if gameData._thumbnail != None:
             answerFrame._image_visible = True
@@ -419,7 +431,8 @@ class Quiz:
 
         await ui.popFrame(channel, answerFrame)
         
-        await asyncio.sleep(4)
+        if isWrong: #오답일시 3초대기
+            await asyncio.sleep(3)
 
     async def nextRound(self):
         gameData = self
@@ -432,6 +445,7 @@ class Quiz:
 
         await asyncio.sleep(2)
         ###### 정답 설정
+        if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
         self.parseAnswer()
@@ -441,10 +455,12 @@ class Quiz:
         gameData._isSkiped = False
         gameData._useHint = False
         gameData._thumbnail = None # 썸네일 초기화
+        gameData._answerPlayer = "" #정답자 초기화
         self._quizUIFrame.initRound(self._voice.channel)
 
 
         ###### 문제 출제
+        if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
         await self.question()
@@ -492,7 +508,7 @@ class Quiz:
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**"+ chr(173) + "　"+str(user.display_name) +"**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
@@ -509,7 +525,7 @@ class Quiz:
         await quizUIFrame.update()
 
         voice = self._voice
-        waitCount = 9 #9초 대기할거임
+        waitCount = 8 #9초 대기할거임
 
         while voice.is_playing(): #재생중이면
             waitCount -= 1
@@ -550,7 +566,7 @@ class Quiz:
 
         playBGM(voice, BGM_TYPE.BELL)
         await quizUIFrame.update()
-        await asyncio.sleep(4)
+        await asyncio.sleep(3)
 
         quizUIFrame._notice_visible = True
         quizUIFrame._notice_text = "" #점수 표시할 곳
@@ -731,6 +747,7 @@ class Quiz:
             roundChecker = gameData._roundIndex  # 정답 맞춘 라운드 저장
 
             self.addScore(author)  # 메세지 보낸사람 1점 획득
+            self._answerPlayer = author.display_name
 
             if self.checkStop(): return
             await self.showAnswer() #정답 공개
@@ -797,7 +814,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**"+ chr(173) + "　"+str(user.display_name) +"**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
@@ -957,6 +974,7 @@ class OXQuiz(Quiz): #OX 퀴즈
         else:
             playBGM(gameData._voice, BGM_TYPE.SUCCESS) #성공 효과음
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         if answerDesc != "": #추가 설명이 있다면
@@ -981,7 +999,8 @@ class OXQuiz(Quiz): #OX 퀴즈
         
         await ui.popFrame(channel, answerFrame)
 
-        await asyncio.sleep(4)
+        if isWrong: #오답일시 3초대기
+            await asyncio.sleep(3)
 
     ##이벤트
     async def action(self, reaction, user): 
@@ -1052,7 +1071,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
             
-
+            voice.stop() #우선 보이스 중지
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
             await fadeIn(voice) #페이드인
             playTime = 2 #페이드인으로 2초 소비
@@ -1113,11 +1132,12 @@ class IntroQuiz(Quiz): #인트로 퀴즈
 
         answerFrame._title_visible = True
         if isWrong: #오답일 시 
-            playBGM(voice, BGM_TYPE.FAIL)
+            #playBGM(voice, BGM_TYPE.FAIL)
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.getRandomWrongIcon() +" 정답 공개　　　　]"
             answerFrame._embedColor = discord.Color.red()
         else:
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
@@ -1135,7 +1155,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         answerFrame._field_visible = True
         for player in self.sortScore(): #점수판 추가
             playerName = player.display_name
-            quizUIFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
+            answerFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
 
         if gameData._thumbnail != None:
             answerFrame._image_visible = True
@@ -1206,6 +1226,11 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
                 quizList.append(quiz)  # 퀴즈 목록에 ox 퀴즈 객체 추가
                 del tmpQuizList[rd]  # 검사한 항목은 삭제
 
+            self._textQuizList = quizList #텍스트 퀴즈들
+
+            self._maxRound = len(quizList)  # 문제 총 개수
+            self._quizUIFrame._quizCnt = self._maxRound #퀴즈UI 총 문제 개수 갱신
+            self._roundIndex = 0  # 현재 라운드
 
     def parseAnswer(self):
         gameData = self
@@ -1250,6 +1275,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
         print(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {gameData._nowQuiz}\n") #정답 표시
 
         playBGM(voice, BGM_TYPE.BELL)
+        await quizUIFrame.update()
 
         await asyncio.sleep(1.0) #1초 대기 후 
 
@@ -1271,7 +1297,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**"+ chr(173) + "　"+str(user.display_name) +"**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
@@ -1374,6 +1400,30 @@ def convert(seconds): #초 값을 시,분,초 로 반환
     seconds %= 60
 
     return hours, mins, seconds
+
+
+def korean_to_be_single(korean_word):
+    """
+    한글 단어를 입력받아서 초성/중성/종성을 구분하여 리턴해줍니다. 
+    """
+    ####################################
+    # 초성 리스트. 00 ~ 18
+    CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+    # 중성 리스트. 00 ~ 20
+    JUNGSUNG_LIST = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ']
+    # 종성 리스트. 00 ~ 27 + 1(1개 없음)
+    JONGSUNG_LIST = [' ', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+    ####################################
+    r_lst = []
+    for w in list(korean_word.strip()):
+        if '가'<=w<='힣':
+            ch1 = (ord(w) - ord('가'))//588
+            ch2 = ((ord(w) - ord('가')) - (588*ch1)) // 28
+            ch3 = (ord(w) - ord('가')) - (588*ch1) - 28*ch2
+            r_lst.append([CHOSUNG_LIST[ch1], JUNGSUNG_LIST[ch2], JONGSUNG_LIST[ch3]])
+        else:
+            r_lst.append([w])
+    return r_lst
 
 def isImage(file):
     if file.endswith(".png") or file.endswith(".jpg") or file.endswith(".gif") or file.endswith(".PNG") or file.endswith(".webp"):
@@ -1491,6 +1541,8 @@ async def startQuiz(quizInfoFrame, owner): #퀴즈 시작
         gameData = OXQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
     elif gameType == GAME_TYPE.INTRO: #인트로 퀴즈면
         gameData = IntroQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
+    elif gameType == GAME_TYPE.QNA: #텍스트 퀴즈면
+        gameData = TextQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
     else: #그 외에는 기본
         gameData = SongQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
 

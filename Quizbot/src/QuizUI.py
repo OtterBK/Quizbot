@@ -300,8 +300,8 @@ class MainFrame(QFrame): #메인 화면
 
         self.addMain(Config.EMOJI_ICON.ICON_LOCALPLAY + "** 로컬 플레이**")
         self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이**")
-        #self.addMain(Config.EMOJI_ICON.ICON_HELP + "** 무언가**")
         self.addMain(Config.EMOJI_ICON.ICON_SETTING + "** 설정**")
+        self.addMain(Config.EMOJI_ICON.ICON_PATCHNOTE + "** 패치노트**")
         self.addMain(Config.EMOJI_ICON.ICON_INFO + "** 정보**")
 
         self._notice_visible = True
@@ -338,9 +338,11 @@ class MainFrame(QFrame): #메인 화면
             elif number == 3: 
                 await showFrame(message, SettingFrame(), isPopUp=True) #설정창 표시
             elif number == 4: 
+                await showFrame(message, PathNoteSelectFrame(Config.PATCHNOTE_PATH), isPopUp=True) #패치노트창 표시
+            elif number == 5: 
                 await showFrame(message, BotInfoFrame(), isPopUp=True) #봇 정보창 표시
-
-
+                
+                
 class CategorySelectFrame(QFrame): #카테고리 선택 화면
     def __init__(self, categoryPath):
         super().__init__() #frame 초기화
@@ -785,6 +787,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
 
             if option._hintType == 0: #투표 타입일 시 
                 self._vote_hint.append(playerName) #투표 처리
+                await message.channel.send("```"+playerName.display_name+" 님이 힌트요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_HINT+"　"+str(len(self._vote_hint))+" / "+str(self._vote_hint_min)+"```")
             elif option._hintType == 1: #주최자 타입일 시
                 if self._quizOwner == user: #주최자인 경우에만
                     self._vote_hint.append(playerName) #투표 처리
@@ -801,9 +804,11 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
 
             if option._skipType == 0: #투표 타입일 시 
                 self._vote_skip.append(playerName) #투표 처리
+                await message.channel.send("```"+playerName.display_name+" 님이 스킵하기에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_SKIP+"　"+str(len(self._vote_skip))+" / "+str(self._vote_skip_min)+"```")
             elif option._skipType == 1: #주최자 타입일 시
                 if self._quizOwner == user: #주최자인 경우에만
                     self._vote_skip.append(playerName) #투표 처리
+                    
 
             if len(self._vote_skip) >= self._vote_skip_min: #최저 투표수를 넘었다면
                 
@@ -1075,7 +1080,7 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._main_visible = False
 
         self._notice_visible = True
-        self._notice_text = Config.EMOJI_ICON.ICON_WARN + "　**멀티 플레이는 2월6일에 추가됩니다.**\n"
+        self._notice_text = Config.EMOJI_ICON.ICON_WARN + "　**죄송합니다. 멀티 플레이는 2월8일에 꼭! 추가하겠습니다..**\n"
     
 
         self._field_visible = False
@@ -1094,6 +1099,135 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
     async def action(self, reaction, user, selectorData): 
         await super().action(reaction, user, selectorData)
 
+
+class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
+    def __init__(self, categoryPath):
+        super().__init__() #frame 초기화
+        self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_SEARCH +" 패치노트　　　　]"
+
+        self._sub_visible = True
+        self._sub_text = "**열람할 패치노트를 선택해주세요.**"
+
+        self._notice_visible = True
+
+        self._field_visible = False
+
+        self._page_visible = True
+        self._page_nowPage = 0
+        
+        self._path_visible = True
+
+        self._image_visible = False
+
+        self._embedColor = discord.Color.dark_teal()
+
+        ##추가
+        self._myPath = categoryPath #탐색 경로 저장용
+        self._absoluteMap = dict() #icon 파싱값 등을 포함한 실제이름
+        self.getMainList()
+
+    def getMainList(self):
+
+        viewPath = "패치노트/" #표시용 패스
+        
+        allPath = self._myPath #절대 경로
+
+        self._path_text = viewPath #패스 표시
+
+        quizList = os.listdir(allPath) #해당 경로의 모든 패치노트 가져오기
+
+        self._main_text = [] #메인 텍스트 초기화
+        self._absoluteMap = dict()
+
+        tmpList = []
+        for tmpFile in quizList: #쓸모없는 파일은 무시
+            if not tmpFile.endswith(".patchnote"): #패치노트 확장자 아니면
+                continue #다음 파일로
+            fileName = tmpFile.split("&")[0] #실제 파일명만 긁어오기
+            fileName = tmpFile.replace(".patchnote", "") #확장자 떼어내기
+            showText = fileName #표시할 항목명
+            self._absoluteMap[showText] = tmpFile #절대 이름 설정
+            tmpList.append(showText)
+        
+        self._main_text = [] #메인 텍스트 초기화
+        i = len(tmpList) #역순 나열
+        while i > 0:
+            i -= 1
+            text = tmpList[i]
+            self.addMain(text) #메인 텍스트에 추가
+
+        self._notice_text = Config.EMOJI_ICON.ICON_BOX+ "　항목 수 : **" + str(len(self._absoluteMap.keys())) + "개**"
+
+    async def action(self, reaction, user, selectorData): 
+        await super().action(reaction, user, selectorData)
+
+        emoji = reaction.emoji
+        message = reaction.message
+        guild = message.guild
+
+        number = Config.getNumberFromEmoji(emoji) #이모지에 대응하는 정수값 가져옴
+        if number != -1: #숫자 이모지라면
+            
+            fileIndex = self._page_nowPage * LIST_PER_PAGE #선택한 목록의 인덱스를 가져옴
+            fileIndex += number - 1
+            selectName = self._main_text[fileIndex] #선택한 항목의 표시 이름
+            absoluteName = self._absoluteMap[selectName] #실제 이름 가져옴
+
+            newPath = self._myPath + absoluteName #패치노트의 절대 경로
+            await showFrame(message, PatchNoteInfoFrame(newPath), isPopUp=True) #퀴즈 선택 프레임 열기
+
+
+class PatchNoteInfoFrame(QFrame):
+
+    def __init__(self, notePath):
+        super().__init__() #frame 초기화
+
+        tmpStr = notePath.split("/")
+        patchNoteFile = tmpStr[len(tmpStr)-1] #패치노트 파일명 이름
+        noteName = patchNoteFile.replace(".patchnote", "") #실제 파일명만 긁어오기
+
+        self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_NOTE + " " + noteName + "　　　　]"
+
+        self._sub_visible = True
+        self._sub_text = "패치노트 내역를 불러올 수 없습니다."
+
+        self._notice_visible = False
+
+        self._field_visible = False
+
+        self._page_visible = False
+
+        self._path_visible = True
+
+        self._path_text = "패치노트/" + noteName
+
+        self._image_visible = False
+
+        self._main_visible = False
+
+        self._embedColor = discord.Color.dark_grey()
+        
+        ##추가
+        self._myPath = notePath
+        self.loadNoteInfo()
+    
+    def loadNoteInfo(self): #패치노트 로드
+        infoPath = self._myPath
+
+        infoText = ""
+        try:
+            f = open(infoPath, 'r', encoding="utf-8" )
+            while True:
+                line = f.readline()
+                if not line: break
+
+                infoText += line
+            f.close()
+        except:
+            print("파일 로드 에러, "+infoPath)
+            infoText = "패치 내역를 불러올 수 없습니다."
+        
+        self._sub_text = infoText
 
 #utility
 def initializing(_bot, _fun_startQuiz):

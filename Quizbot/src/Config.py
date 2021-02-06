@@ -13,6 +13,7 @@ TMP_PATH = "F:/quizbot/tmp/" #임시폴더
 DATA_PATH = "F:/quizbot/savedata/" #데이터 저장 폴더
 OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
+PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
 VERSION = "2.0 Alpha"
 LAST_PATCH = "21/02/05"
@@ -77,6 +78,8 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_GIT = "🌐"
     ICON_FIX = "🛠️"
     ICON_GOOD = "👍"
+    ICON_PATCHNOTE = "📗"
+    ICON_NOTE = "📜"
 
     CLOCK_0 = "🕛"
     CLOCK_1 = "🕐"
