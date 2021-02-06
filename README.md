@@ -76,7 +76,7 @@ BOT_LINK = "" #봇 공유 링크
 
 <br>
 
-#### :camera: 스냅샷
+## :camera: 스냅샷
 
 ![quizbot](https://user-images.githubusercontent.com/28488288/107127934-07189c00-68fd-11eb-9342-4a051a310ebd.gif)
 
