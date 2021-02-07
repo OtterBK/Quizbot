@@ -608,7 +608,7 @@ class QuizInfoFrame(QFrame):
 
 class QuizUIFrame(QFrame): #퀴즈 ui 프레임
 
-    def __init__(self, quizPath):
+    def __init__(self, quizPath, channel):
         super().__init__() #frame 초기화
 
         tmpStr = quizPath.split("/")
@@ -673,6 +673,8 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         
         self._fun_stop = None
         self._stop_use = False
+
+        self._chatChannel = channel
 
         self.loadQuizInfo()
 
@@ -739,7 +741,22 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         self._quizDesc = infoText
 
     async def update(self): #새로고침
-        await showFrame(self._myMessage, self, isPopUp=False)
+        try:
+            await showFrame(self._myMessage, self, isPopUp=False)
+        except:
+            print("퀴즈 UI 업데이트 에러, UI 재생성")
+            quizUIEmbed = discord.Embed(title="UI 재생성 중...", url=None, description="잠시만 기다려주세요.\n", color=discord.Color.blue())
+            quizUIEmbed.set_author(name=bot.user.name, url="",
+                        icon_url=bot.user.avatar_url)
+            quizUIEmbed.remove_author()
+
+            quizUIMessage = await self._chatChannel.send(embed=quizUIEmbed)
+
+            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_HINT) #힌트
+            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP) #스킵
+            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP) #중지
+
+            await showFrame(quizUIMessage, self, isPopUp=False) #띄우기
 
     def setFunction(self, fun_requestHint, fun_skip, fun_stop): #함수 설정
         self._fun_requestHint = fun_requestHint #힌트 요청
@@ -1045,9 +1062,10 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         self._main_visible = False
 
         self._notice_visible = True
-        self._notice_text = Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n"
-        self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　\n" + Config.EMAIL_ADDRESS + "\n"
+        self._notice_text = Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n" +chr(173) + "\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
         self._notice_text += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_GIT + " 소스코드 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
         #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n" 
         self._notice_text += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
     
@@ -1259,8 +1277,7 @@ def loadRank(): #랭크 파일 로드
             rankMap[guildID] = rankData
 
 
-def getOption(guild): #해당 길드의 옵션파일 가져오기
-    guildID = guild.id
+def getOption(guildID): #해당 길드의 옵션파일 가져오기
     if guildID in optionMap: #이미 있다면
         return optionMap[guildID] 
     else:
@@ -1314,14 +1331,15 @@ def initOption(option): #옵션 초기화
     option._repeatCount = 1
 
 async def clearChat(chatChannel): #메시지 삭제
-    guild = chatChannel.guild #
+    guildID = chatChannel.guild.id #
+
     excludeMsg = []
-    if guild in selectorMap.keys():
-        selectorData = selectorMap[guild]    
+    if guildID in selectorMap.keys():
+        selectorData = selectorMap[guildID]    
         excludeMsg.append(selectorData._selectorMessage)
     
-    if guild in quizUIMap.keys():
-        quizUIFrame = quizUIMap[guild]
+    if guildID in quizUIMap.keys():
+        quizUIFrame = quizUIMap[guildID]
         excludeMsg.append(quizUIFrame._myMessage)
     
     number = 500 #긁어올 메시지 개수
@@ -1332,8 +1350,8 @@ async def clearChat(chatChannel): #메시지 삭제
 
 
 def removeQuizUI(guild): #퀴즈 UI 프레임 삭제
-    if guild in quizUIMap:
-        del quizUIMap[guild]
+    if guild.id in quizUIMap:
+        del quizUIMap[guild.id]
 
 def isQuiz(fileName): #퀴즈 폴더인지 확인
     fileName = fileName.lower()
@@ -1398,9 +1416,9 @@ def getViewPath(allPath):
 
 
 async def returnToTitle(guild): #해당 서버의 퀴즈 선택 UI를 초기화
-    if not guild in selectorMap.keys(): 
+    if not guild.id in selectorMap.keys(): 
         return
-    selectorData = selectorMap[guild]
+    selectorData = selectorMap[guild.id]
     selectorData._frameStack = []
     await showFrame(selectorData._selectorMessage, MainFrame(), isPopUp=False)
 
@@ -1428,11 +1446,11 @@ async def createSelectorUI(channel): #초기 UI생성
     guild = channel.guild 
 
     selectorData = None
-    if not guild in selectorMap.keys(): #기존 데이터 없다면
+    if not guild.id in selectorMap.keys(): #기존 데이터 없다면
         selectorData = SelectorData(quizListMessage) #생성
-        selectorMap[guild] = selectorData #데이터 등록
+        selectorMap[guild.id] = selectorData #데이터 등록
     else: #기존 데이터 있다면
-        selectorData = selectorMap[guild]
+        selectorData = selectorMap[guild.id]
 
     selectorData._frameStack = [] #프레임 스택 초기ㅏ화
     await showFrame(quizListMessage, MainFrame(), isPopUp=False)
@@ -1456,13 +1474,12 @@ async def createQuizUI(channel, quizPath, owner): #초기 UI생성
     await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP) #스킵
     await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP) #중지
 
-    guild = channel.guild
-    quizUIFrame = QuizUIFrame(quizPath)  #UI프레임 생성
-    option = getOption(guild) #옵션 값 로드
+    guildID = channel.guild.id
+    quizUIFrame = QuizUIFrame(quizPath, channel)  #UI프레임 생성
+    option = getOption(guildID) #옵션 값 로드
     quizUIFrame.setOption(option) #옵션 값 설정
-    quizUIMap[guild] = quizUIFrame
 
-    quizUIMap[guild] = quizUIFrame #퀴즈 UI 등록
+    quizUIMap[guildID] = quizUIFrame #퀴즈 UI 등록
 
     await showFrame(quizUIMessage, quizUIFrame, isPopUp=False) #띄우기
 
@@ -1473,12 +1490,13 @@ async def showTop(message, selectorData):
     topFrame = selectorData._frameStack[len(selectorData._frameStack) - 1]
     await showFrame(message, topFrame, isPopUp=False) #새로운 top 프레임 표시
 
+
 async def showFrame(message, frame, isPopUp=True): #프레임 표시, isPopUp 가 True면 프레임을 추가로 띄우는 방식으로
-    guild = message.guild
-    if not guild in selectorMap.keys(): #등록된 selector데이터가 없다면
+    guildID = message.guild.id
+    if not guildID in selectorMap.keys(): #등록된 selector데이터가 없다면
         return
 
-    selectorData = selectorMap[guild]
+    selectorData = selectorMap[guildID]
 
     await setFrame(message, frame)
     if isPopUp: #팝업 방식이면
@@ -1513,10 +1531,13 @@ async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성
             embed.set_image(url="attachment://quizThumbnail.png")
 
     message = None
-    if thumbnailFile != None: #로컬 이미지 사용시
-        message = await channel.send(file=thumbnailFile, embed=embed) # 메시지 객체 업데이트 
-    else:
-        message = await channel.send(embed=embed) # 메시지 객체 업데이트 
+    try:
+        if thumbnailFile != None: #로컬 이미지 사용시
+            message = await channel.send(file=thumbnailFile, embed=embed) # 메시지 객체 업데이트 
+        else:
+            message = await channel.send(embed=embed) # 메시지 객체 업데이트 
+    except:
+        print("메시지 에러 2")
     
     frame.paint(message) #프레임 표시 이벤트
 
@@ -1597,10 +1618,10 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
 
 
 async def update(message): #해당 메시지 객체로 프레임 업데이트
-    guild = message.guild
-    if not guild in selectorMap.keys():
+    guildID = message.guild.id
+    if not guildID in selectorMap.keys():
         return
-    selectorData = selectorMap[guild]
+    selectorData = selectorMap[guildID]
     await showTop(message, selectorData)
 
 
@@ -1610,10 +1631,10 @@ async def on_reaction_add(reaction, user):
     message = reaction.message #반응한 메시지
     guild = message.guild #반응한 서버
         
-    if not guild in selectorMap.keys(): #데이터 없다면
+    if not guild.id in selectorMap.keys(): #데이터 없다면
         return
 
-    selectorData = selectorMap[guild]
+    selectorData = selectorMap[guild.id]
     if len(selectorData._frameStack) <= 0: #프레임 스택이 비어있다면
         selectorData._frameStack.append(MainFrame()) #메인 화면 프레임 추가
 
@@ -1625,8 +1646,8 @@ async def on_reaction_add(reaction, user):
             await showTop(message, selectorData) #top 프레임 표시
             return
 
-    if guild in quizUIMap: #퀴즈 UI프레임이 있으면 이것두 이벤트 동작
-        quizUIFrame = quizUIMap[guild]
+    if guild.id in quizUIMap: #퀴즈 UI프레임이 있으면 이것두 이벤트 동작
+        quizUIFrame = quizUIMap[guild.id]
         await quizUIFrame.action(reaction, user, selectorData)
     
     frame = selectorData._frameStack[len(selectorData._frameStack) - 1] #가장 top 프레임 가져옴

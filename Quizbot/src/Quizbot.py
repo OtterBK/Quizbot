@@ -215,11 +215,11 @@ class Quiz:
 
         voice = get(bot.voice_clients, guild=uiMessage.guild)  # 봇의 음성 객체 얻기
         
-        quizUIFrame._field_visible = True
-        for player in self.sortScore(): #점수판 추가
-            playerName = player.display_name
-            quizUIFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
-
+        # quizUIFrame._field_visible = True
+        # for player in self.sortScore(): #점수판 추가
+        #     playerName = player.display_name
+        #     quizUIFrame.addField(playerName,"[ " + str(gameData._scoreMap[player]) + "p" +" ]")
+        quizUIFrame._field_text.clear()
 
         quizUIFrame._title_visible = True
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
@@ -394,7 +394,7 @@ class Quiz:
             answerFrame._embedColor = discord.Color.red()
         else:
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
-            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
@@ -438,7 +438,10 @@ class Quiz:
         gameData = self
 
         ###### 라운드 표시
-        isContinue = await self.noticeRound()
+        try:
+            isContinue = await self.noticeRound()
+        except:
+            print("noticeRound error")
         if not isContinue: #퀴즈 속행 아니면 return
             return
         roundChecker = gameData._roundIndex  # 현재 라운드 저장
@@ -448,7 +451,10 @@ class Quiz:
         if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
-        self.parseAnswer()
+        try:
+            self.parseAnswer()
+        except:
+            print("parseAnswer error")
 
         ###### 라운드 초기화
         
@@ -463,15 +469,25 @@ class Quiz:
         if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
-        await self.question()
+        try:
+            await self.question()
+        except:
+            print("question error")
                                         
         ###### 정답 공개
         if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
         if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER:  # 아직도 정답자 없다면
-            await self.showAnswer(isWrong=True) #정답 공개
-            await self.nextRound() #다음 라운드 진행 
+            try:
+                await self.showAnswer(isWrong=True) #정답 공개
+            except:
+                print("showAnswer error")
+
+            try:
+                await self.nextRound() #다음 라운드 진행 
+            except:
+                print("nextRound error")
 
 
     def addScore(self, user): #1점 추가
@@ -508,7 +524,7 @@ class Quiz:
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
@@ -630,7 +646,7 @@ class Quiz:
         answer = answer.upper() #대문자로
         #answer = answer.replace(" ", "") #공백 제거
         answerLen = len(answer) #문자 길이
-        hintLen = math.ceil(answerLen / 5)+1#표시할 힌트 글자수
+        hintLen = int(answerLen / 4)+1#표시할 힌트 글자수
         hintStr = "" #힌트 문자열
 
         hintIndex = []
@@ -642,7 +658,7 @@ class Quiz:
                 break
 
             rd = random.randrange(0, answerLen)
-            if rd in hintIndex or rd == " ": #이미 인덱스에 있거나 공백이라면
+            if rd in hintIndex or answer[rd] == " ": #이미 인덱스에 있거나 공백이라면
                 continue
             else:
                 hintIndex.append(rd)
@@ -814,7 +830,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
@@ -974,7 +990,7 @@ class OXQuiz(Quiz): #OX 퀴즈
         else:
             playBGM(gameData._voice, BGM_TYPE.SUCCESS) #성공 효과음
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
-            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         if answerDesc != "": #추가 설명이 있다면
@@ -1137,7 +1153,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
             answerFrame._embedColor = discord.Color.red()
         else:
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_COLLECT +" 정답!　　　　]"
-            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(gameData._answerPlayer) +" ]**" + "\n"
+            answerFrame._sub_text = chr(173)+"\n" + Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(gameData._answerPlayer) +" ]**" + "\n"
             answerFrame._embedColor = discord.Color.green()
 
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
@@ -1297,7 +1313,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
         quizUIFrame._title_text = chr(173)+"[　　　　"+ quizUIFrame._quizIcon + " " + quizUIFrame._quizName + "　　　　]"
 
         quizUIFrame._sub_visible = True
-        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ chr(173) + "　"+str(user.display_name) +" ]**"
+        quizUIFrame._sub_text = Config.getRandomHumanIcon()+" 정답자　**["+ "　"+str(user.display_name) +" ]**"
 
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
