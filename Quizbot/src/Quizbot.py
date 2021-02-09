@@ -14,6 +14,10 @@ from threading import Thread
 from mutagen.mp3 import MP3
 from pydub import AudioSegment
 from shutil import copyfile
+import sys, traceback
+import logging
+logging.basicConfig(level=logging.ERROR) #로깅 설정
+
 
 import Config
 import QuizUI as ui
@@ -210,7 +214,13 @@ class Quiz:
         gameData._roundIndex += 1 #라운드 +1
         quizUIFrame._quizRound = gameData._roundIndex #퀴즈UI 라운드 갱신
         if gameData._roundIndex > gameData._maxRound:  # 더이상문제가없다면
-            await self.finishGame()  # 게임 끝내기
+            try:
+                await self.finishGame()  # 게임 끝내기
+            except:
+                print("게임 종료 에러, ")
+                logging.error(traceback.format_exc())
+                return False
+
             return False
 
         voice = get(bot.voice_clients, guild=uiMessage.guild)  # 봇의 음성 객체 얻기
@@ -307,6 +317,7 @@ class Quiz:
                             audioLength = length_in_secs
                 except:
                     print("오디오 열기 에러, "+str(file))
+                    logging.error(traceback.format_exc())
                     return None
 
                 return audioName, audioLength
@@ -440,10 +451,12 @@ class Quiz:
         ###### 라운드 표시
         try:
             isContinue = await self.noticeRound()
+            if not isContinue: #퀴즈 속행 아니면 return
+                return
         except:
             print("noticeRound error")
-        if not isContinue: #퀴즈 속행 아니면 return
-            return
+            logging.error(traceback.format_exc())
+
         roundChecker = gameData._roundIndex  # 현재 라운드 저장
 
         await asyncio.sleep(2)
@@ -455,6 +468,7 @@ class Quiz:
             self.parseAnswer()
         except:
             print("parseAnswer error")
+            logging.error(traceback.format_exc())
 
         ###### 라운드 초기화
         
@@ -473,6 +487,7 @@ class Quiz:
             await self.question()
         except:
             print("question error")
+            logging.error(traceback.format_exc())
                                         
         ###### 정답 공개
         if self.checkStop(): return
@@ -483,11 +498,13 @@ class Quiz:
                 await self.showAnswer(isWrong=True) #정답 공개
             except:
                 print("showAnswer error")
+                logging.error(traceback.format_exc())
 
             try:
                 await self.nextRound() #다음 라운드 진행 
             except:
                 print("nextRound error")
+                logging.error(traceback.format_exc())
 
 
     def addScore(self, user): #1점 추가
@@ -631,7 +648,7 @@ class Quiz:
         
         gameData = self #게임 데이터 불러올거임
 
-        if gameData._gameStep != GAME_STEP.WAIT_FOR_ANSWER and gameData._gameStep != GAME_STEP.WAIT_FOR_NEXT: #정답자 대기중이거나 다음라 대기중이 아니면
+        if gameData._gameStep != GAME_STEP.WAIT_FOR_ANSWER: #정답자 대기중이 아니면
             return
         if gameData._useHint == True: #이미 힌트 썻다면
             return
@@ -1355,6 +1372,7 @@ async def fadeIn(voice):
             await asyncio.sleep(0.10)   
     except:
         print("fade In error")
+        logging.error(traceback.format_exc())
 
 
 
@@ -1372,6 +1390,7 @@ async def fadeOut(voice):
         voice.stop()  # 노래 중지
     except:
         print("fade out error")
+        logging.error(traceback.format_exc())
 
 
 async def clearAll(chatChannel):
@@ -1482,6 +1501,7 @@ def playBGM(voice, bgmType): #BGM 틀기
             voice.play(discord.FFmpegPCMAudio(bgmName))
     except:
         print("error01 - voice is not connect error")
+        logging.error(traceback.format_exc())
 
 
 def getQuizTypeFromIcon(icon): #아이콘으로 퀴즈 타입 추측
@@ -1652,6 +1672,7 @@ async def on_reaction_add(reaction, user):
                 isAlreadyRemove = True
                 await reaction.remove(user)  # 이모지 삭제
             except:
+                logging.error(traceback.format_exc())
                 return
         await ui.on_reaction_add(reaction, user) #이벤트 동작
 

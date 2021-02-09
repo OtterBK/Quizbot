@@ -6,6 +6,7 @@ import random
 BOT_PREFIX = "!" #명령어 prefix
 
 QUIZ_PATH = "F:/quizbot/gameData/"  # 게임 소스폴더
+MULTI_PATH = "F:/quizbot/multiplay/"  # 멀티플레이 소스폴더
 BGM_PATH = "F:/quizbot/bgm/"  # 효과음 폴더
 SAVE_PATH = "F:/quizbot/download/" 
 TMP_PATH = "F:/quizbot/tmp/" #임시폴더
@@ -88,6 +89,7 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_GOOD = "👍"
     ICON_PATCHNOTE = "📗"
     ICON_NOTE = "📜"
+    ICON_CHECK = "✅"
 
     CLOCK_0 = "🕛"
     CLOCK_1 = "🕐"
