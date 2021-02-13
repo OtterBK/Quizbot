@@ -2430,7 +2430,7 @@ async def stopCommand(ctx):  # ping 테스트
     guildData = getGuildData(ctx.guild) #길드 데이터 없으면 초기화
     if guildData._gameData != None:
         gameData = guildData._gameData
-        if gameData.owner == ctx.message.author: #주최자라면
+        if gameData._owner == ctx.message.author: #주최자라면
             gameData.stop()
         else:
             ctx.message.channel.send("```" + "퀴즈 중지는 주최자만이 가능합니다.\n음성 채널 관리 권한이 있다면 [ 봇 우클릭 -> 연결 끊기 ] 를 눌러도 종료가 가능합니다." + "```")
