@@ -15,12 +15,17 @@ OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
-VERSION = "2.02"
-LAST_PATCH = "21/02/05"
+VERSION = "2.05"
+LAST_PATCH = "21/02/12"
 EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
 
 TOKEN = ""
+
+#멀티 플레이 관련
+SYNC_INTERVAL = 0.1 #동기 체크 딜레이
+MAX_CONNECTION = 30
+
 try:
     f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
     TOKEN = f.readline().strip()
@@ -90,6 +95,9 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_PATCHNOTE = "📗"
     ICON_NOTE = "📜"
     ICON_CHECK = "✅"
+    ICON_CHAT = "📫"
+    ICON_FIGHT = "🥊"
+    
 
     CLOCK_0 = "🕛"
     CLOCK_1 = "🕐"
@@ -113,6 +121,7 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_TYPE_OX = "⭕"
     ICON_TYPE_QNA = "👨‍🎓"
     ICON_TYPE_INTRO = "🎶"
+    ICON_TYPE_MULTIPLAY = "🛰"
     ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"
                     , "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
     NUMBER = [ "0️⃣", "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
@@ -146,3 +155,4 @@ def getMedalFromNumber(index): #정수값에 알맞은 메달 이모지 반환
 
 def getRandomHumanIcon():
     return random.choice(EMOJI_ICON.ICON_HUMAN)
+

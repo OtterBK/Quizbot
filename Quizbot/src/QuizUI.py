@@ -28,8 +28,8 @@ quizUIMap = dict() #퀴즈 UI
 optionMap = dict() #각 길드의 옵션들
 rankMap = dict() #각 길드의 랭크 데이터
 
-matchingQueue = [] #멀티플레이 매칭 대기열
-
+matchingCategory = dict() #카테고리별 매칭 대기열 
+MULTIPLAY_RANKNAME = "multiplay"
 
 class SelectorData:
     def __init__(self, selectorMessage):
@@ -116,12 +116,15 @@ class PlayerStat(): #플레이어 스탯 정보
         self._topScore = 0 #최고점
 
 
+
 class MultiplayStat(): #멀티 플레이 스탯 정보, 카테고리마다 다름
 
-    def __init__(self):
+    def __init__(self, guildID, guildName):
+        self._guildID = guildID
+        self._guildName = guildName #플레이어 이름
         self._multiStat_win = 0 #멀티 승리
         self._multiStat_defeat = 0 #멀티 패배
-        self._multiStat_play = 0 #멀티 플레이
+        self._multiStat_play = 0 #멀티 플레이 수
 
 
 class Scoreboard(): #순위표
@@ -200,6 +203,7 @@ class Scoreboard(): #순위표
 
     def sort(self, isDesc=True): #내림차순 정렬
         scoreMap = self._score
+        if len(scoreMap) == 0: return
 
         sortPlayer = []  # 빈 리스트
 
@@ -223,12 +227,128 @@ class Scoreboard(): #순위표
         scoreMap = tmpMap
 
 
+class MultiplayScoreboard(Scoreboard):
+
+    def __init__(self, guildID, quizName):
+        super().__init__(guildID, quizName)
+
+        self._quizName = quizName #퀴즈명
+        self._score = dict()
+
+
+    def loadScore(self): #순위 불러오기
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
+        if os.path.isfile(rankFile):
+
+            f = open(rankFile, 'r', encoding="utf-8" )
+            while True:
+                try:
+
+                    line = f.readline()
+                    if not line: break
+
+                    data = line.split("&$") #미리 정한 구분자로 파싱
+                    guildID = data[0]
+                    guildName = data[1]
+                    winCount = data[2] 
+                    defeatCout = data[3]
+                    playCout = data[4]
+
+                    for tmpGuild in bot.guilds:
+                        if str(tmpGuild.id) == str(tmpGuild.id):
+                            guild = tmpGuild
+                            guildName = guild.name #서버명 갱신
+
+                    multiplayStat = MultiplayStat(guildID, guildName)
+                    multiplayStat._multiStat_win = int(winCount)
+                    multiplayStat._multiStat_defeat = int(defeatCout)
+                    multiplayStat._multiStat_play = int(playCout)
+
+                    self._score[guildID] = multiplayStat #순위표에 넣기
+
+                except:
+                    print("멀티 플레이 스탯 로드 에러, "+str(rankFile))
+                    logging.error(traceback.format_exc())
+
+
+            f.close()
+
+        self.sort() #정렬 한번
+
+    def saveScore(self): #순위표 저장
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
+
+        f = open(rankFile, 'w', encoding="utf-8")
+
+        for guildID in self._score.keys():
+            try:
+                multiplayStat = self._score[guildID]  # 멀티플레이 스탯 가져오기
+                f.write(str(multiplayStat._guildID)+"&$")
+                f.write(str(multiplayStat._guildName)+"&$")
+                f.write(str(multiplayStat._multiStat_win)+"&$")
+                f.write(str(multiplayStat._multiStat_defeat)+"&$")
+                f.write(str(multiplayStat._multiStat_play)+"&$")
+                f.write("\n")
+            except:
+                print("멀티 순위표 저장 에러, "+str(self._guildID))
+                logging.error(traceback.format_exc())
+
+        f.close()
+
+
+    
+    def mergeScore(self, scoreMap): #순위 병합
+        baseScore = self._score
+
+        for guild in scoreMap.keys(): #병합할 순위표의 플레이어들에 대해
+            guildID = str(guild.id)
+            
+            if not guildID in self._score.keys(): #존재 안하면
+                tmpStat = MultiplayStat(guild.id, guild.name) #새로 생성
+                self._score[guildID] = tmpStat #넣어주기
+
+            multiplayStat = self._score[guildID] #스탯 가져오기
+            result = scoreMap[guild]  #대전 결과
+            if result == 1: #승리시
+                multiplayStat._multiStat_win += 1
+            elif result == 0: #패배시
+                multiplayStat._multiStat_defeat += 1
+            multiplayStat._multiStat_play += 1
+
+        self.sort() #정렬
+
+        self.saveScore() #저장
+
+    def sort(self, isDesc=True): #내림차순 정렬
+        scoreMap = self._score
+        if len(scoreMap) == 0: return
+
+        sortGuild = []  # 빈 리스트
+
+        for guildID in scoreMap.keys():  # 정렬
+            index = 0  # 인덱스
+            stat = scoreMap[guildID]  # 스탯 객체
+            winCount = int(stat._multiStat_win) #승리수
+            while index < len(sortGuild):
+                cp = sortGuild[index]  # 비교대상
+                cp_win = int(scoreMap[cp]._multiStat_win)  # 비교대상 승리수
+                if winCount > cp_win:  # 비교대상보다 승리수높으면
+                    break  # while 빠져나가기
+                index += 1  # 다음 대상으로
+
+            sortGuild.insert(index, guildID)  # 삽입 장소에 추가
+
+        tmpMap = dict()
+        for guildID in sortGuild: #데이터 재삽입
+            tmpMap[guildID] = scoreMap[guildID]
+        
+        scoreMap = tmpMap
+
 class RankData(): #랭킹 저장용
     
     def __init__(self, guildID):
         self._guildID = guildID
-        self._localRank = dict() #로컬 플레이 랭크맵, 퀴즈명 - 순위표
-        self._multiRank = dict() #멀티 플레이 랭크맵, 카테고리명 - 스탯
+        self._localRank = dict() #로컬 플레이 랭크맵, 퀴즈명 - 순위
 
         self.loadLocalRank() #데이터 로드
 
@@ -249,9 +369,25 @@ class RankData(): #랭킹 저장용
                 self._localRank[quizName] = scoreboard
 
 
+class MultiplayRankData(RankData): #멀티플레이 랭킹 저장용
+    def __init__(self, guildID):
+        super().__init__(guildID)
+
+    def loadLocalRank(self): #멀티플레이 순위표 로드
+        rankPath = Config.RANK_PATH + str(self._guildID) + "/" #해당 길드의 랭크 저장 폴더
+
+        if not os.path.exists(rankPath): 
+            os.makedirs(rankPath) #폴더 생성
+            return #데이터 없으니 return
 
 
-    
+        self._localRank.clear()
+        for optionFile in os.listdir(rankPath):
+            if optionFile.endswith(".scoreboard"): #확장자가 .scoreboard 인 경우에만
+                quizName = optionFile.replace(".scoreboard", "") #확장자 떼어내기
+                scoreboard = MultiplayScoreboard(self._guildID, quizName) #순위표 생성
+                scoreboard.loadScore() #로드
+                self._localRank[quizName] = scoreboard
 
 #프레임들
 class QFrame:
@@ -288,6 +424,9 @@ class QFrame:
         self._image_url = "" #이미지 url
 
         self._embedColor = discord.Color.magenta() #색상
+        
+        self._author = None #작성자 여부 None이면 기본값
+
 
         self._myMessage = None
 
@@ -331,7 +470,7 @@ class MainFrame(QFrame): #메인 화면
         self._sub_visible = False
 
         self.addMain(Config.EMOJI_ICON.ICON_LOCALPLAY + "** 로컬 플레이**")
-        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이**")
+        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이** [　***베타***　]")
         self.addMain(Config.EMOJI_ICON.ICON_SETTING + "** 설정**")
         self.addMain(Config.EMOJI_ICON.ICON_PATCHNOTE + "** 패치노트**")
         self.addMain(Config.EMOJI_ICON.ICON_INFO + "** 정보**")
@@ -728,22 +867,13 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             self._customFooter_visible = True
             self._customFooter_text = Config.EMOJI_ICON.ICON_BOX+" 문제: " + str(self._quizRound) + " / "+str(self._quizCnt) +"　|　" 
 
-            hintStr = ""
-            if self._option._hintType == 0: #투표 타입이면
-                hintStr = str(len(self._vote_hint)) + "/" + str(self._vote_hint_min)
-            elif self._option._hintType == 1: #주최자 타입이면
-                hintStr = "주최자만"
-            elif self._option._hintType == 2: #자동 타입이면
-                hintStr = "자동"
+
+            hintStr =  getDisplayOption(OPTION_TYPE.HINT_TYPE, self._option._hintType)[0]
             self._customFooter_text += Config.EMOJI_ICON.ICON_HINT+" 힌트: " + hintStr
 
             self._customFooter_text += "　" + chr(173) + "　"
 
-            skipStr = ""
-            if self._option._skipType == 0: #투표 타입이면
-                skipStr = str(len(self._vote_skip)) + "/" + str(self._vote_skip_min)
-            elif self._option._skipType == 1: #주최자 타입이면
-                skipStr = "주최자만"
+            skipStr =  getDisplayOption(OPTION_TYPE.HINT_TYPE, self._option._hintType)[0]
             self._customFooter_text += Config.EMOJI_ICON.ICON_SKIP+" 스킵: " + skipStr
 
     def loadQuizInfo(self): #퀴즈 정보 로드
@@ -888,7 +1018,7 @@ class ScoreboardFrame(QFrame): #순위표 표시 화면
         self._sub_text = Config.EMOJI_ICON.ICON_LIST + " " + str(scoreboard._quizName) + " 퀴즈에 대한 순위표입니다."
 
         self._notice_visible = True
-        self._notice_text = Config.EMOJI_ICON.ICON_NOTICE+" 순위표는 현재 디스코드 서버내의 유저만 표시됩니다."
+        #self._notice_text = Config.EMOJI_ICON.ICON_NOTICE+" 순위표는 현재 디스코드 서버내의 유저만 표시됩니다."
 
         self._field_visible = False
 
@@ -925,6 +1055,52 @@ class ScoreboardFrame(QFrame): #순위표 표시 화면
         await super().action(reaction, user, selectorData)
 
 
+class MultiplayScoreboardFrame(ScoreboardFrame): #순위표 표시 화면
+    def __init__(self, multiplayScoreboard):
+        super().__init__(multiplayScoreboard) #frame 초기화
+        self._title_text = chr(173)+"[　　　　" + Config.getMedalFromNumber(0) + " 순위표" +" 　　　　]"
+
+        self._sub_visible = True
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + " " + str(multiplayScoreboard._quizName) + " 퀴즈에 대한 순위표입니다."
+
+        self._notice_visible = True
+        #self._notice_text = Config.EMOJI_ICON.ICON_NOTICE+" 순위표는 현재 디스코드 서버내의 유저만 표시됩니다."
+
+        self._field_visible = False
+
+        self._main_visible = True
+
+        self._page_visible = True
+        self._page_nowPage = 0
+        
+        self._path_visible = True
+        self._path_text = str(multiplayScoreboard._quizName)+"/순위표/"
+
+        self._image_visible = False
+
+        self._embedColor = discord.Color.purple()
+
+        ##추가
+        self._scoreboard = multiplayScoreboard
+        
+        self.setScore() #main에 scoreboard 표시
+
+    def setScore(self):
+        
+        self._main_text.clear()
+        scoreMap = self._scoreboard._score
+
+        if len(scoreMap.keys()) == 0: #점수 기록이 없다면
+            self.addMain("기록이 존재하지 않습니다.")
+        else:
+            for guildID in scoreMap.keys():
+                multiplayStat = scoreMap[guildID]
+                self.addMain(str(multiplayStat._guildName) + "　**" + chr(173) + "　"+ chr(173) + str(multiplayStat._multiStat_win)+ " 승　|　"+str(multiplayStat._multiStat_defeat)+" 패"+"**")
+
+    async def action(self, reaction, user, selectorData): 
+        await super().action(reaction, user, selectorData)
+
+
 
 class MultiplayFrame(QFrame): #멀티플레이 화면
     def __init__(self, multiplayPath):
@@ -932,12 +1108,11 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_MULTIPLAY +" 멀티 플레이　　　　]"
 
         self._sub_visible = True
-        self._sub_text += Config.EMOJI_ICON.ICON_LIST + "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
         self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
-        #self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
-        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**곧 추가됩니다.**\n"
+        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
 
-        self._main_visible = False
+        self._main_visible = True
 
         self._notice_visible = True
         self._notice_text = ""
@@ -1026,7 +1201,12 @@ class MultiplayInfoFrame(QFrame):
         self._sub_text = "퀴즈 정보를 불러올 수 없습니다."
 
         self._notice_visible = True
-        self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + " " + quizName +" 카테고리를 매칭중인 서버 **" + "?" + "개**"
+
+        if not quizName in matchingCategory.keys(): #해당 퀴즈에 대해 생성된 매칭큐가 없다면
+            matchingCategory[quizName] = [] #새롭게 생성
+        matchingQueue = matchingCategory[quizName]
+
+        self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + "　" + quizName +" 카테고리를 매칭중인 서버 **" + str(len(matchingQueue)) + "개**"
 
         self._field_visible = False
 
@@ -1055,10 +1235,13 @@ class MultiplayInfoFrame(QFrame):
         self._quizTopNickname = "" #1등 별명
         self._searchPathList = [] #멀티용 퀴즈들 위치
 
-        self._stopFlag = False
+        self._stopFlag = True
         self._receive = [] #받은 메시지 저장용 큐
         self._target = None
+        self._guildID = ""
         self._ready = False
+        self._waitSec = 0
+        self._pathList = []
 
         self.loadQuizInfo()
     
@@ -1066,6 +1249,8 @@ class MultiplayInfoFrame(QFrame):
         infoPath = self._myPath + "info.txt"
 
         infoText = chr(173)+"\n"+Config.EMOJI_ICON.ICON_LIST + " **퀴즈 설명**:\n"
+        isPathList = False
+        pathList = []
         try:
             f = open(infoPath, 'r', encoding="utf-8" )
             while True:
@@ -1081,18 +1266,25 @@ class MultiplayInfoFrame(QFrame):
                 elif line.startswith("&typeName: "):
                     typeName = line.replace("&typeName: ", "").strip()
                     self._quizTypeName = typeName
-                elif line.startswith("&quizCount: "):
-                    quizCount = line.replace("&quizCount: ", "").strip()
-                    self._quizCnt = int(quizCount)
+                elif line.startswith("&pathList"):
+                    isPathList = True #퀴즈 경로 설정으로
+                elif line.startswith("&endPathList"):
+                    isPathList = False #퀴즈 경로 설정 중지
+                elif line.startswith("&typeName: "):
+                    typeName = line.replace("&typeName: ", "").strip()
+                    self._quizTypeName = typeName
                 else:
-                    infoText += line
+                    if isPathList: #퀴즈 경로 설정중이면
+                        pathList.append(line.strip())
+                    else:
+                        infoText += line
             f.close()
         except:
             print("파일 로드 에러, "+infoPath)
             logging.error(traceback.format_exc())
             infoText = "퀴즈 정보를 불러올 수 없습니다."
             
-        
+        self._pathList = pathList
         self._quizDesc = infoText
 
         subText = Config.EMOJI_ICON.ICON_TYPE + "　퀴즈 유형:　**" + self._quizTypeName + "**" + "\n"
@@ -1104,20 +1296,87 @@ class MultiplayInfoFrame(QFrame):
     def paint(self, message):
         super().paint(message)
 
-    async def update(self): #새로고침
-        await showFrame(self._myMessage, self, isPopUp=False)
+    def destructor(self, message):
+        self.stopMatch()
 
-    async def startMatch(self):
+    def stopMatch(self):
+        self._stopFlag = True
+        matchingQueue = matchingCategory[self._quizName]
+        if self in matchingQueue:
+            matchingQueue.remove(self) #큐에서 삭제
+
+    async def update(self): #새로고침
+        try:
+            await showFrame(self._myMessage, self, isPopUp=False)
+        except:
+            self._stopFlag = True
+            print("매칭 메시지 에러 발생")
+            logging.error(traceback.format_exc())
+
+    async def startMatch(self, owner, selectorData):
+        if not self._stopFlag: #이미 매칭중이면
+            return
+
+        if owner.voice == None:
+            self._notice_text = Config.EMOJI_ICON.ICON_WARN + " 먼저 음성 채널에 참가해주세요."
+            await self.update()
+            return
+
+        # bot의 해당 길드에서의 음성 대화용 객체
+        voice = get(bot.voice_clients, guild=self._myMessage.channel.guild)
+        if voice and voice.is_connected():  # 해당 길드에서 음성 대화가 이미 연결된 상태라면 (즉, 누군가 퀴즈 중)
+            self._notice_text = Config.EMOJI_ICON.ICON_WARN + "현재 진행중인 퀴즈를 중지해주세요.\n　 "+Config.EMOJI_ICON.ICON_STOP+" 버튼 클릭 또는 !중지"
+            await self.update()
+            return
+
+        self._stopFlag = False
+        voiceChannel = owner.voice.channel  # 호출자의 음성 채널 얻기
+        voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+        voice.play(discord.FFmpegPCMAudio(Config.BGM_PATH + "MATCHING.mp3"))
+
+        if not self._quizName in matchingCategory.keys(): #해당 퀴즈에 대해 생성된 매칭큐가 없다면
+            matchingCategory[self._quizName] = [] #새롭게 생성
+        matchingQueue = matchingCategory[self._quizName]
         matchingQueue.append(self) #큐 등록
         self._receive = []
         self._ready = False
+        self._guild = self._myMessage.channel.guild #길드 등록
 
-        clockCnt = 0
+        isConnecting = False #연결 시도 중 여부
+
+        clockCnt = 11
         while True:
-            if self._stopFlag: return
+            if self._stopFlag: 
+                if self in matchingQueue:
+                    matchingQueue.remove(self) #큐에서 삭제
+                voice = get(bot.voice_clients, guild=self._myMessage.channel.guild)
+                if voice and voice.is_connected():  # 해당 길드에서 음성 대화가 이미 연결된 상태라면 (즉, 누군가 퀴즈 중)
+                    await voice.disconnect()
+                try:
+                    self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + "　" + self._quizName +" 카테고리를 매칭중인 서버 **" + str(len(matchingQueue)) + "개**"
+                    await self.update()
+                except:
+                    print("매칭 취소 메시지 표시 에러")
 
-            clockCnt += 1
-            if clockCnt > 11: clockCnt = 0
+                return
+
+
+            if len(selectorData._frameStack) > 0:# 프레임 존재시
+                topFrame = selectorData._frameStack[len(selectorData._frameStack) - 1] #최상위 프레임 가져옴
+                if topFrame != self: #최상위 프레임이 자신이 아니면
+                    self.stopMatch()
+                    continue
+            else: #프레임 없으면
+                self.stopMatch()
+                continue
+
+            if owner.voice == None: #큐  돌린사람 보이스채널 나가면
+                self._stopFlag = True  #큐 중지
+                continue
+
+            self._waitSec += 1
+            clockCnt -= 1
+            if clockCnt < 0: clockCnt = 11
             self._notice_text = getClockIcon(clockCnt,11) + "　"#아이콘 표시
 
             if len(self._receive) > 0: #메시지함에 뭐라도 있으면
@@ -1130,46 +1389,61 @@ class MultiplayInfoFrame(QFrame):
                 if messageType == NET_MESSAGE_TYPE.REQUEST: #연결 요청일 경우
                     self.sendNetMessage(sender, NET_MESSAGE_TYPE.ACK) #연결 수락 보냄
                     self._notice_text += "대전 상대를 찾았습니다. 연결 요청 중..."
-                    await self.update()
+                    
                 elif messageType == NET_MESSAGE_TYPE.ACK: #연결 요청 수락일 경우
                     self.sendNetMessage(sender, NET_MESSAGE_TYPE.CONNECT) #연결 시작 보냄
                     self._notice_text += "대전 상대와 연결 중..."
-                    await self.update()
+
                 elif messageType == NET_MESSAGE_TYPE.CONNECT: #연결 시작일 경우
-                    self._notice_text = Config.EMOJI_ICON.ICON_CHECK+"연결 성공! 대전을 시작합니다."
+                    self._notice_text = Config.EMOJI_ICON.ICON_TYPE_MULTIPLAY+"　상대의 응답을 기다리는 중입니다..."
                     self.sendNetMessage(sender, NET_MESSAGE_TYPE.CONNECT) #연결 시작 보냄
                     self._target = sender
                     await self.update()
                     break
 
             else: #메시지 온게 없다면
-
+                
                 myIndex = matchingQueue.index(self)
                 if  myIndex < len(matchingQueue) - 1: #자신이 대기열의 마지막이 아니라면
-                    target = matchingQueue[myIndex + 1] #내 뒤에 있는 객체 가져옴
-                    self.sendNetMessage(target, NET_MESSAGE_TYPE.REQUEST) #연결 요청 보냄
-                    self._notice_text += "대전 상대를 찾았습니다... 연결 요청 중..."
-                    await self.update()
+                    if not isConnecting: #이미 연결중이 아니면
+                        target = matchingQueue[myIndex + 1] #내 뒤에 있는 객체 가져옴
+                        self.sendNetMessage(target, NET_MESSAGE_TYPE.REQUEST) #연결 요청 보냄
+                        self._notice_text += "대전 상대를 찾았습니다... 연결 요청 중..."
+                        isConnecting = True
+                        try:
+                            voice.play(discord.FFmpegPCMAudio(Config.BGM_PATH + "MATCH_FIND.mp3"))
+                        except:
+                            print("BGM play error")
                 else:
-                    self._notice_text += "대전 상대를 탐색 중..."
-                    await self.update()
+                    self._notice_text += "대전 상대를 탐색 중... " + str(self._waitSec) + "초"
+                    isConnecting = False
 
+            await self.update()
             await asyncio.sleep(1) #1초 대기
 
         if self._target != None:
             self._ready = True #준비 완료로 변경
 
-            interval = 0.1
-            loopCnt = Config.MAX_CONNECTION / interval
+            loopCnt = Config.MAX_CONNECTION / Config.SYNC_INTERVAL
 
             i = 0
             while not self._target._ready: #상대 준비 완료 대기
-                await asyncio.sleep(0.1) # 0.1초마다 확인
+                await asyncio.sleep(Config.SYNC_INTERVAL) # 0.1초마다 확인
                 i += 1
-                if i > 600:
+                if i > loopCnt:
+                    self._notice_text += "연결 시간 초과"
+                    await self.update()
+                    break
 
-
-
+            if not self._target._ready: #상대 준비 상태가 아니면
+                await self.startMatch(owner)
+            else:
+                self._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._target._myMessage.guild.name) + "**\n" + chr(173) + "\n"
+                self._notice_text += Config.EMOJI_ICON.ICON_CHECK+" 연결 성공! 대전을 시작합니다!"
+                await self.update()
+                print("멀티플레이 시작 "+ str(self._quizName) +", " + str(self._myMessage.guild.name))
+                await asyncio.sleep(3)
+                await fun_startQuiz(self, owner, forceStart=True) #퀴즈 시작
 
 
     def sendNetMessage(self, target, messageType):
@@ -1177,10 +1451,6 @@ class MultiplayInfoFrame(QFrame):
         netMessage = NetMessage(self, messageType)
         target._receive.insert(0, netMessage) #메시지 전송
 
-
-    def destructor(self):
-        self._stopFlag = True
-    
     
     async def action(self, reaction, user, selectorData): 
         await super().action(reaction, user, selectorData)
@@ -1192,10 +1462,11 @@ class MultiplayInfoFrame(QFrame):
         number = Config.getNumberFromEmoji(emoji) #이모지에 대응하는 정수값 가져옴
         if number != -1: #숫자 이모지라면
             if number == 1: #1번은 퀴즈 시작
-                await self.startMatch() #매칭 시작
+                await self.startMatch(user, selectorData) #매칭 시작
             elif number == 2: #2번은 순위 확인
-                scoreboard = getScoreboard(guild.id, self._quizName)
-                await showFrame(message, ScoreboardFrame(scoreboard), isPopUp=True) #순위 확인창 표시
+                self.stopMatch()
+                scoreboard = getMultiplayScoreboard(self._quizName)
+                await showFrame(message, MultiplayScoreboardFrame(scoreboard), isPopUp=True) #순위 확인창 표시
 
 
 class SettingFrame(QFrame): #옵션 화면
@@ -1544,6 +1815,7 @@ def initializing(_bot, _fun_startQuiz):
     fun_startQuiz = _fun_startQuiz
 
     loadOption() #옵션 불러오기
+    loadRank() #랭크 데이터 불러오기
 
     global isSet
     isSet = True
@@ -1552,8 +1824,8 @@ def loadOption(): #옵션 파일 로드
     optionMap.clear()
 
     multiplayOption = QOption("-1") #멀티용
-    multiplayOption._hintType = 4 #사용불가
-    multiplayOption._skipType = 3 #사용불가
+    multiplayOption._hintType = 3 #사용불가
+    multiplayOption._skipType = 2 #사용불가
     multiplayOption._trimLength = 30 
     multiplayOption._repeatCount = 1
     optionMap["-1"] = multiplayOption
@@ -1568,8 +1840,12 @@ def loadOption(): #옵션 파일 로드
 def loadRank(): #랭크 파일 로드
     rankMap.clear()
     for guildID in os.listdir(Config.RANK_PATH):
-        if(os.path.isdir(guildID)):  # 폴더인지 확인(폴더만 추출할거임)
-            rankData = RankData(guildID)
+        if(os.path.isdir(Config.RANK_PATH + guildID + "/")):  # 폴더인지 확인(폴더만 추출할거임)
+            rankData = None
+            if guildID.find(MULTIPLAY_RANKNAME) != -1:
+                rankData = MultiplayRankData(guildID)
+            else:
+                rankData = RankData(guildID)
             rankMap[guildID] = rankData
 
 
@@ -1581,6 +1857,7 @@ def getOption(guildID): #해당 길드의 옵션파일 가져오기
         option.save()
         optionMap[guildID] = option
         return option
+
 
 def getScoreboard(guildID, quizName): #순위표 가져오기
     rankData = None
@@ -1594,6 +1871,25 @@ def getScoreboard(guildID, quizName): #순위표 가져오기
     scoreboard = None
     if not quizName in localRank.keys(): #퀴즈에 맞는 순위표가 없다면
         scoreboard = Scoreboard(guildID, quizName) #생성 후 넣어주기
+        localRank[quizName] = scoreboard
+    else:
+        scoreboard = localRank[quizName]
+
+    return scoreboard
+
+
+def getMultiplayScoreboard(quizName): #멀티용 스코어보드 가져오기
+    rankData = None
+    if not MULTIPLAY_RANKNAME in rankMap.keys(): #랭크 데이터 없다면
+        rankData = MultiplayRankData(MULTIPLAY_RANKNAME) #생성후 넣기
+        rankMap[MULTIPLAY_RANKNAME] = rankData 
+    else:
+        rankData = rankMap[MULTIPLAY_RANKNAME]
+    
+    localRank = rankData._localRank
+    scoreboard = None
+    if not quizName in localRank.keys(): #퀴즈에 맞는 순위표가 없다면
+        scoreboard = MultiplayScoreboard(MULTIPLAY_RANKNAME, quizName) #생성 후 넣어주기
         localRank[quizName] = scoreboard
     else:
         scoreboard = localRank[quizName]
@@ -1730,6 +2026,9 @@ async def returnToTitle(guild): #해당 서버의 퀴즈 선택 UI를 초기화
 async def createSelectorUI(channel): #초기 UI생성
     if not isSet: return
 
+    guild = channel.guild 
+
+
     quizListEmbed = discord.Embed(
             title="초기화중... 잠시만 기다려주세요.", url=None, description="\n▽", color=discord.Color.dark_magenta())
     quizListEmbed.set_author(name=bot.user.name,
@@ -1739,6 +2038,16 @@ async def createSelectorUI(channel): #초기 UI생성
 
     quizListMessage = await channel.send(embed=quizListEmbed)
 
+    selectorData = None
+    if not guild.id in selectorMap.keys(): #기존 데이터 없다면
+        selectorData = SelectorData(quizListMessage) #생성
+        selectorMap[guild.id] = selectorData #데이터 등록
+    else: #기존 데이터 있다면
+        selectorData = selectorMap[guild.id]
+
+    selectorData._frameStack = [] #프레임 스택 초기화
+
+    #버튼 달기
     await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PREV)
     i = 1
     while i < 6: #1~5번 버튼만
@@ -1747,16 +2056,6 @@ async def createSelectorUI(channel): #초기 UI생성
     await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PARENT)
     await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_NEXT)
 
-    guild = channel.guild 
-
-    selectorData = None
-    if not guild.id in selectorMap.keys(): #기존 데이터 없다면
-        selectorData = SelectorData(quizListMessage) #생성
-        selectorMap[guild.id] = selectorData #데이터 등록
-    else: #기존 데이터 있다면
-        selectorData = selectorMap[guild.id]
-
-    selectorData._frameStack = [] #프레임 스택 초기ㅏ화
     await showFrame(quizListMessage, MainFrame(), isPopUp=False)
 
     return selectorData
@@ -1912,10 +2211,17 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
         if not frame._image_local: #로컬 이미지 사용이 아니면
             selectorEmbed.set_image(url=frame._image_url)
 
+    
+
     # embed 추가 설정
-    selectorEmbed.set_author(name=bot.user.name, url="",
+    if frame._author == None:
+        selectorEmbed.set_author(name=bot.user.name, url="",
                         icon_url=bot.user.avatar_url)
-    selectorEmbed.remove_author()
+        selectorEmbed.remove_author()
+    else:
+        author = frame._author
+        selectorEmbed.set_author(name=author.name, url="",
+                        icon_url=author.avatar_url)
 
     selectorEmbed.set_footer(text=text_footer) #footer 설정 
 
