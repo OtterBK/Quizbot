@@ -380,7 +380,9 @@ class Quiz:
             repartCnt -= 1
             
             voice.stop() #우선 보이스 중지
+
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
+
             await fadeIn(voice) #페이드인
             playTime = 2 #페이드인으로 2초 소비
 
@@ -720,7 +722,7 @@ class Quiz:
         answer = answer.upper() #대문자로
         #answer = answer.replace(" ", "") #공백 제거
         answerLen = len(answer) #문자 길이
-        hintLen = int(answerLen / 4)+1#표시할 힌트 글자수
+        hintLen = math.ceil(answerLen / 4)#표시할 힌트 글자수
         hintStr = "" #힌트 문자열
 
         hintIndex = []
@@ -1993,7 +1995,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         self._quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._targetData._guild.name) + "**\n" + chr(173) + "\n"
         self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_CHAT+" !챗 <메세지>　"+chr(173)+" - 　서버간 메시지를 전송합니다.\n" + chr(173) + "\n"
         self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_SPEAKER_HIGH+" !보이스동기화　"+chr(173)+"-　노래 싱크 동기화 기능을 활성/비활성 합니다.\n"
-        self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_WARN+" 기본값은 활성이며 비활성시 문제가 나올때마다 보이스 재연결을 하지 않습니다.\n"
+        self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_WARN+" 기본값은 활성이며 비활성시 보이스 재연결을 하지 않습니다.\n재연결 알림소리가 거슬리면 비활성화 해주세요.\n"
 
 
     async def finishGame(self): #퀴즈 종료
@@ -2083,6 +2085,55 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         await voice.disconnect()
         self.checkStop() #데이터 삭제
 
+    async def requestHint(self): #힌트 사용
+        gameData = self #게임 데이터 불러올거임
+        targetData = self._targetData
+
+        gameData._useHint = True #힌트 사용으로 변경
+        asyncio.ensure_future(gameData._chatChannel.send("```"+str(gameData._guild.name)+" 서버가 힌트 요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+"```"))
+        asyncio.ensure_future(targetData._chatChannel.send("```"+str(gameData._guild.name)+" 서버가 힌트 요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+"```"))
+
+        if not targetData._useHint: #상대가 힌트 사용 상태가 아니면
+            return
+    
+        #상대가 힌트 사용 상태인데 해당 객체가 힌트 요청했다면
+
+        #힌트 표시
+        answer = gameData._answerList[0] #정답 가져오기
+        answer = answer.upper() #대문자로
+        #answer = answer.replace(" ", "") #공백 제거
+        answerLen = len(answer) #문자 길이
+        hintLen = math.ceil(answerLen / 4) #표시할 힌트 글자수
+        hintStr = "" #힌트 문자열
+
+        hintIndex = []
+        index = 0
+        limit = 0
+        while index < hintLen: #인덱스 설정
+            limit += 1
+            if  limit > 1000: #시도 한계 설정
+                break
+
+            rd = random.randrange(0, answerLen)
+            if rd in hintIndex or answer[rd] == " ": #이미 인덱스에 있거나 공백이라면
+                continue
+            else:
+                hintIndex.append(rd)
+                index += 1
+
+        index = 0 
+        while index < answerLen:
+            if index in hintIndex: #만약 해당 글자가 표시인덱스에 있다면
+                hintStr += answer[index] #해당 글자는 표시하기
+            elif answer[index] == " ": #공백도 표시
+                hintStr += answer[index]
+            else:
+                hintStr += Config.EMOJI_ICON.ICON_BLIND
+            index += 1
+
+        asyncio.ensure_future(gameData._chatChannel.send("``` "+chr(173)+"\n""요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+"글자 힌트\n"+str(hintStr)+"\n"+chr(173)+"```"))
+        asyncio.ensure_future(targetData._chatChannel.send("``` "+chr(173)+"\n""요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+"글자 힌트\n"+str(hintStr)+"\n"+chr(173)+"```"))
+        
 
     ##이벤트
     async def on_message(self, message):

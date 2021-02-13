@@ -873,7 +873,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
 
             self._customFooter_text += "　" + chr(173) + "　"
 
-            skipStr =  getDisplayOption(OPTION_TYPE.HINT_TYPE, self._option._hintType)[0]
+            skipStr =  getDisplayOption(OPTION_TYPE.SKIP_TYPE, self._option._skipType)[0]
             self._customFooter_text += Config.EMOJI_ICON.ICON_SKIP+" 스킵: " + skipStr
 
     def loadQuizInfo(self): #퀴즈 정보 로드
@@ -937,6 +937,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         voicePeopleCnt = len(voiceChannel.voice_states) #보이스 채널의 현재 인원
 
         self._vote_hint_use = False
+        self._hint_use = False
         self._vote_hint = [] #힌트 투표수
         if self._option._hintType == 0: #투표 유형이면
             self._vote_hint_min = voicePeopleCnt // 2 #최저 힌트 투표 수
@@ -944,9 +945,11 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             self._vote_hint_min = 1 #주최자 1명이면됨
         elif self._option._hintType == 2: #자동 유형이면
             self._vote_hint_min = 10000 #수동 힌트 요청 못쓰게
-        
+        elif self._option._hintType == 4: #멀티형이면
+            self._vote_hint_min = 1 #아무나 투표하면 힌트요청
 
         self._vote_skip_use = False
+        self._skip_use = False
         self._vote_skip = []
         self._vote_skip_min = voicePeopleCnt // 2 #최저 스킵 투표 수
         if self._option._skipType == 0: #투표 유형이면
@@ -967,19 +970,26 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         option = self._option
         if emoji == Config.EMOJI_ICON.ICON_HINT: #각 경우에 맞게 행동
 
-            if self._hint_use: return
+            if self._hint_use:
+                return
 
             if playerName in self._vote_hint: #이미 투표했다면
                 return
 
             if option._hintType == 0: #투표 타입일 시 
                 self._vote_hint.append(playerName) #투표 처리
-                await message.channel.send("```"+playerName.display_name+" 님이 힌트요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_HINT+"　"+str(len(self._vote_hint))+" / "+str(self._vote_hint_min)+"```")
+                await message.channel.send("```"+playerName.display_name+" 님이 힌트 요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_HINT+"　"+str(len(self._vote_hint))+" / "+str(self._vote_hint_min)+"```")
             elif option._hintType == 1: #주최자 타입일 시
                 if self._quizOwner == user: #주최자인 경우에만
                     self._vote_hint.append(playerName) #투표 처리
+            elif option._hintType == 3: #사용불가일 시
+                return
+            elif option._hintType == 4: #멀티플레이 
+                if len(self._vote_hint) == 0: #투표 아무도 안했다면
+                    self._vote_hint.append(playerName) #투표 처리
 
             if len(self._vote_hint) >= self._vote_hint_min: #최저 투표수를 넘었다면
+                self._hint_use = True
                 await self._fun_requestHint() #힌트 요청
 
         elif emoji == Config.EMOJI_ICON.ICON_SKIP: 
@@ -995,10 +1005,12 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             elif option._skipType == 1: #주최자 타입일 시
                 if self._quizOwner == user: #주최자인 경우에만
                     self._vote_skip.append(playerName) #투표 처리
+            elif option._skipType == 2: #사용불가일 시
+                return
                     
 
             if len(self._vote_skip) >= self._vote_skip_min: #최저 투표수를 넘었다면
-                
+                self._skip_use = True
                 await self._fun_skip() #스킵
 
         elif emoji == Config.EMOJI_ICON.ICON_STOP: 
@@ -1824,7 +1836,7 @@ def loadOption(): #옵션 파일 로드
     optionMap.clear()
 
     multiplayOption = QOption("-1") #멀티용
-    multiplayOption._hintType = 3 #사용불가
+    multiplayOption._hintType = 4 #멀티
     multiplayOption._skipType = 2 #사용불가
     multiplayOption._trimLength = 30 
     multiplayOption._repeatCount = 1
@@ -1906,6 +1918,8 @@ def getDisplayOption(OptionType, value): #옵션 타입과 값에 따라 적절�
             return "자동", "남은 시간이 절반일 때 자동으로 힌트가 요청됩니다."
         elif value == 3:
             return "사용불가", "힌트 요청이 불가능합니다."
+        elif value == 4:
+            return "멀티용", "힌트 요청이 불가능합니다."
     elif OptionType == OPTION_TYPE.SKIP_TYPE: #스킵 타입일 경우
         if value == 0:
             return "투표", "퀴즈에 참여중인 인원의 절반이 투표할 시 문제를 건너뜁니다."
