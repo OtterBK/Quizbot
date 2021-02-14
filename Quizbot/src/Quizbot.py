@@ -1460,12 +1460,6 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
                     # #now = datetime.datetime.now() #동기 성공 시간 표시
                     # #print(str(self._netStep)+", "+str(now))
-                    # if isSyncRound:
-                    #     if self._roundIndex != targetData._roundIndex: #라운드 강제 동기
-                    #         if self._roundIndex > targetData._roundIndex:
-                    #             targetData._roundIndex = self._roundIndex
-                    #         else:
-                    #             self._roundIndex = targetData._roundIndex
 
                 i += 1
                 if i > loopCnt:
@@ -1480,6 +1474,12 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             logging.error(traceback.format_exc())
             return False
 
+        if isSyncRound:
+            if self._roundIndex != targetData._roundIndex: #라운드 강제 동기
+                if self._roundIndex > targetData._roundIndex:
+                    targetData._roundIndex = self._roundIndex
+                else:
+                    self._roundIndex = targetData._roundIndex
         
         try:
             if syncMessage != None:
@@ -1800,6 +1800,16 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         # print(str(self._guild.name)+ str(rdWait) +" 초")
         # await asyncio.sleep(rdWait)
         
+        #인원 수 표시 재설정
+        try:
+            self._quizUIFrame._notice_visible = True
+            self._quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._targetData._guild.name) + " / "+ str(len(self._targetData._voice.channel.voice_states)-1) + "명"+"**\n" + chr(173) + "\n"
+            self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_CHAT+" !챗 <메세지>　"+chr(173)+" - 　서버간 메시지를 전송합니다.\n" + chr(173) + "\n"
+            self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_SPEAKER_HIGH+" !보이스동기화　"+chr(173)+"-　노래 싱크 동기화 기능을 활성/비활성 합니다.\n"
+            self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_WARN+" 기본값은 활성이며 비활성시 보이스 재연결을 하지 않습니다.\n재연결 알림소리가 거슬리면 비활성화 해주세요.\n"
+        except:
+            pass
+
         ###### 라운드 표시
         if self.checkStop(): return
         self._netStep = NET_STEP.NEXTROUND
@@ -1992,12 +2002,6 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         self._quizUIFrame._quizCnt = self._maxRound #퀴즈UI 총 문제 개수 갱신
         self._roundIndex = 0  # 현재 라운드
 
-        self._quizUIFrame._notice_visible = True
-        self._quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._targetData._guild.name) + "**\n" + chr(173) + "\n"
-        self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_CHAT+" !챗 <메세지>　"+chr(173)+" - 　서버간 메시지를 전송합니다.\n" + chr(173) + "\n"
-        self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_SPEAKER_HIGH+" !보이스동기화　"+chr(173)+"-　노래 싱크 동기화 기능을 활성/비활성 합니다.\n"
-        self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_WARN+" 기본값은 활성이며 비활성시 보이스 재연결을 하지 않습니다.\n재연결 알림소리가 거슬리면 비활성화 해주세요.\n"
-
 
     async def finishGame(self): #퀴즈 종료
         gameData = self
@@ -2092,7 +2096,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 mvpUser = user
 
         if mvpUser != None:
-            quizUIFrame._notice_text += chr(173)+"\n"+str(Config.EMOJI_ICON.ICON_TROPHY) + " " + "MVP　" + str(user.display_name) + str(bestScore) + " 점　" + chr(173)
+            quizUIFrame._notice_text += chr(173)+"\n"+str(Config.EMOJI_ICON.ICON_TROPHY) + " " + "MVP　" + str(mvpUser.display_name) + " " + str(bestScore) + "점 획득" + chr(173)
             playBGM(voice, BGM_TYPE.SUCCESS) #mvp발표
             await quizUIFrame.update()
 
@@ -2491,6 +2495,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
   
     print("봇 이름:",bot.user.name,"봇 아이디:",bot.user.id,"봇 버전:",discord.__version__)
+    print(str(len(bot.guilds)) + "개의 서버 연결됨")
 
 
 @bot.command(pass_context=False, aliases=["ping"])  # ping 명령어 입력시
@@ -2549,11 +2554,12 @@ async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
     if gamesrc == None:
         guild = ctx.guild #서버
         guildData = getGuildData(guild) #길드 데이터 없으면 초기화
-         
-        #await ctx.message.channel.send("```현재 멀티플레이 시스템 추가를 위한 점검 중입니다. \n정상적으로 퀴즈를 진행할 수 없습니다.```")
 
         await ui.createSelectorUI(ctx.channel) #UI 재설정
         guildData._selectorChannelID = ctx.channel.id #버튼 상호작용 채널 설정
+
+        if Config.NOTICE != "":#공지가 있다면
+            await ctx.message.channel.send("```"+ chr(173) + "\n" +str(Config.NOTICE) + chr(173) + "\n"+"```")
 
 @bot.event
 async def on_message(message):

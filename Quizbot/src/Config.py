@@ -5,12 +5,13 @@ import random
 
 BOT_PREFIX = "!" #명령어 prefix
 
-QUIZ_PATH = "F:/quizbot/gameData/"  # 게임 소스폴더
-MULTI_PATH = "F:/quizbot/multiplay/"  # 멀티플레이 소스폴더
-BGM_PATH = "F:/quizbot/bgm/"  # 효과음 폴더
-SAVE_PATH = "F:/quizbot/download/" 
-TMP_PATH = "F:/quizbot/tmp/" #임시폴더
-DATA_PATH = "F:/quizbot/savedata/" #데이터 저장 폴더
+RESOURCE_PATH = "F:/quizbot/"
+QUIZ_PATH = RESOURCE_PATH + "gameData/"  # 게임 소스폴더
+MULTI_PATH = RESOURCE_PATH + "multiplay/"  # 멀티플레이 소스폴더
+BGM_PATH = RESOURCE_PATH + "bgm/"  # 효과음 폴더
+SAVE_PATH = RESOURCE_PATH + "download/" 
+TMP_PATH = RESOURCE_PATH + "tmp/" #임시폴더
+DATA_PATH = RESOURCE_PATH + "savedata/" #데이터 저장 폴더
 OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
@@ -21,6 +22,7 @@ EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
 
 TOKEN = ""
+NOTICE = ""
 
 #멀티 플레이 관련
 SYNC_INTERVAL = 0.01 #동기 체크 딜레이
@@ -29,6 +31,18 @@ MAX_CONNECTION = 30
 try:
     f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
     TOKEN = f.readline().strip()
+    f.close()
+except:
+    print("토큰 로드 에러")
+
+try:
+    f = open(DATA_PATH+"notice.txt", 'r', encoding="utf-8" ) #공지
+    while True:
+        line = f.readline()
+        if not line:
+            break
+
+        NOTICE += f.readline()
     f.close()
 except:
     print("토큰 로드 에러")

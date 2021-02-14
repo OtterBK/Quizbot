@@ -1325,7 +1325,7 @@ class MultiplayInfoFrame(QFrame):
                     self._quizTypeName = typeName
                 else:
                     if isPathList: #퀴즈 경로 설정중이면
-                        pathList.append(line.strip())
+                        pathList.append(Config.QUIZ_PATH + line.strip())
                     else:
                         infoText += line
             f.close()
