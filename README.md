@@ -20,7 +20,7 @@
 
 <div align=center>
   
-[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot)](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot)&nbsp;&nbsp;&nbsp;<br>
+[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot)](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot)&nbsp;&nbsp;&nbsp;<br>
 ☝ 퀴즈봇 추가하기 
 </div>
 <br>
