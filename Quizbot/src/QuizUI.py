@@ -469,8 +469,12 @@ class MainFrame(QFrame): #메인 화면
 
         self._sub_visible = False
 
+        matchingCnt = 0
+        for matchingQueue in matchingCategory.values():
+            matchingCnt += len(matchingQueue)
+
         self.addMain(Config.EMOJI_ICON.ICON_LOCALPLAY + "** 로컬 플레이**")
-        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이** [　***베타***　]")
+        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이**　[　**"+Config.EMOJI_ICON.ICON_NET+" "+str(matchingCnt)+"**　]")
         self.addMain(Config.EMOJI_ICON.ICON_SETTING + "** 설정**")
         self.addMain(Config.EMOJI_ICON.ICON_PATCHNOTE + "** 패치노트**")
         self.addMain(Config.EMOJI_ICON.ICON_INFO + "** 정보**")
@@ -491,6 +495,22 @@ class MainFrame(QFrame): #메인 화면
         self._image_url = "https://user-images.githubusercontent.com/28488288/106536426-c48d4300-653b-11eb-97ee-445ba6bced9b.jpg"
 
         self._embedColor = discord.Color.magenta() 
+
+    def paint(self, message):
+        super().paint(message)
+
+        self._main_text = []
+
+        matchingCnt = 0
+        for matchingQueue in matchingCategory.values():
+            matchingCnt += len(matchingQueue)
+
+        self.addMain(Config.EMOJI_ICON.ICON_LOCALPLAY + "** 로컬 플레이**")
+        self.addMain(Config.EMOJI_ICON.ICON_MULTIPLAY + "** 멀티 플레이**　[　**"+Config.EMOJI_ICON.ICON_NET+" "+str(matchingCnt)+"**　]")
+        self.addMain(Config.EMOJI_ICON.ICON_SETTING + "** 설정**")
+        self.addMain(Config.EMOJI_ICON.ICON_PATCHNOTE + "** 패치노트**")
+        self.addMain(Config.EMOJI_ICON.ICON_INFO + "** 정보**")
+
 
     async def action(self, reaction, user, selectorData): 
         await super().action(reaction, user, selectorData)
@@ -1124,6 +1144,12 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
         self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
 
+        matchingCnt = 0
+        for matchingQueue in matchingCategory.values():
+            matchingCnt += len(matchingQueue)
+
+        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_NET + "　매칭중인 서버 수: **"+str(matchingCnt)+"**\n"
+
         self._main_visible = True
 
         self._notice_visible = True
@@ -1148,6 +1174,18 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._absoluteMap = dict() #icon 파싱값 등을 포함한 실제이름
         self.getMainList()
 
+    def paint(self, message):
+        super().paint(message)
+        self._sub_visible = True
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
+        self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
+        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
+
+        matchingCnt = 0
+        for matchingQueue in matchingCategory.values():
+            matchingCnt += len(matchingQueue)
+
+        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_NET + "　매칭중인 서버 수: **"+str(matchingCnt)+"**\n"
 
     def getMainList(self):
 
@@ -1450,6 +1488,7 @@ class MultiplayInfoFrame(QFrame):
             if not self._target._ready: #상대 준비 상태가 아니면
                 await self.startMatch(owner)
             else:
+                self.stopMatch() #매칭 중지
                 self._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._target._myMessage.guild.name) + "**\n" + chr(173) + "\n"
                 self._notice_text += Config.EMOJI_ICON.ICON_CHECK+" 연결 성공! 대전을 시작합니다!"
                 await self.update()
@@ -2234,7 +2273,7 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
         selectorEmbed.remove_author()
     else:
         author = frame._author
-        selectorEmbed.set_author(name=author.name, url="",
+        selectorEmbed.set_author(name=author.display_name, url="",
                         icon_url=author.avatar_url)
 
     selectorEmbed.set_footer(text=text_footer) #footer 설정 

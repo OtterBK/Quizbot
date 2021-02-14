@@ -19,6 +19,7 @@ import logging
 import datetime
 
 logging.basicConfig(level=logging.ERROR) #로깅 설정
+random.seed() #시드 설정
 
 
 import Config
@@ -203,7 +204,7 @@ class Quiz:
         quizList = []  # 빈 리스트 선언
 
         while len(tmpList) > 0:  # 모든 파일에 대해
-            rd = random.randrange(0, len(tmpList))  # 0부터 tmpList 크기 -1 만큼
+            rd = random.randint(0, len(tmpList) - 1)  # 0부터 tmpList 크기 -1 만큼
             quiz = tmpList[rd]  # 무작위 1개 선택
             if(os.path.isdir(self._gamePath + quiz)):  # 폴더인지 확인(폴더만 추출할거임)
                 quizList.append(quiz)  # 퀴즈 목록에 추가
@@ -332,9 +333,9 @@ class Quiz:
                             song = AudioSegment.from_mp3( audioName ) #오디오 자르기 가져오기
                             if length_in_secs > gameData._trimLength + 20: #노래 길이가 자를 시간 + 20만큼 크면
                                 #최적의 자르기 실행
-                                startTime = random.randrange(10, (length_in_secs - gameData._trimLength - 10)) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
+                                startTime = random.randint(10, (length_in_secs - gameData._trimLength - 10) - 1) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
                             else:
-                                startTime = random.randrange(0, length_in_secs - gameData._trimLength)
+                                startTime = random.randint(0, length_in_secs - gameData._trimLength - 1)
 
                             endTime = startTime + gameData._trimLength #지정된 길이만큼 자르기
                             startTime *= 1000 #s 를 ms로
@@ -733,7 +734,7 @@ class Quiz:
             if  limit > 1000: #시도 한계 설정
                 break
 
-            rd = random.randrange(0, answerLen)
+            rd = random.randint(0, answerLen - 1)
             if rd in hintIndex or answer[rd] == " ": #이미 인덱스에 있거나 공백이라면
                 continue
             else:
@@ -792,6 +793,8 @@ class Quiz:
 
     async def stop(self): #퀴즈 중지
         await self._voice.disconnect()
+
+        if self._gameStep == GAME_STEP.END: return
 
         quizUIFrame = self._quizUIFrame
 
@@ -979,7 +982,7 @@ class OXQuiz(Quiz): #OX 퀴즈
 
             quizList = []  # 빈 리스트 선언
             while len(tmpQuizList) > 0:  # 모든 퀴즈 객체에 대해
-                rd = random.randrange(0, len(tmpQuizList))  # 0부터 tmpQuizList 크기 -1 만큼
+                rd = random.randint(0, len(tmpQuizList) - 1)  # 0부터 tmpQuizList 크기 -1 만큼
                 quiz = tmpQuizList[rd]  # 무작위 1개 선택
                 quizList.append(quiz)  # 퀴즈 목록에 ox 퀴즈 객체 추가
                 del tmpQuizList[rd]  # 검사한 항목은 삭제
@@ -1329,7 +1332,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
 
             quizList = []  # 빈 리스트 선언
             while len(tmpQuizList) > 0:  # 모든 퀴즈 객체에 대해
-                rd = random.randrange(0, len(tmpQuizList))  # 0부터 tmpQuizList 크기 -1 만큼
+                rd = random.randint(0, len(tmpQuizList) - 1)  # 0부터 tmpQuizList 크기 -1 만큼
                 quiz = tmpQuizList[rd]  # 무작위 1개 선택
                 quizList.append(quiz)  # 퀴즈 목록에 ox 퀴즈 객체 추가
                 del tmpQuizList[rd]  # 검사한 항목은 삭제
@@ -1446,47 +1449,44 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
     async def sync(self, isSyncRound=False): #동기화, isSyncRound 는 라운드 강제 동기 여부
         try:
             targetData = self._targetData
-            if self._netStep != targetData._netStep: #현재 자신의 단계가 상대와 같지 않다면
-                syncMessage = None
+            syncMessage = None
 
-                loopCnt = Config.MAX_CONNECTION / Config.SYNC_INTERVAL
-                i = 0
-                while True: #단계 같아질때까지
-                    await asyncio.sleep(Config.SYNC_INTERVAL) # 확인 딜레이
-                    if targetData._gameStep == GAME_STEP.END: #상대가 게임 끝났다면
-                        return #동기화 중지
+            loopCnt = Config.MAX_CONNECTION / Config.SYNC_INTERVAL
+            i = 0
+            while self._netStep != targetData._netStep: #단계 같아질때까지
+                await asyncio.sleep(Config.SYNC_INTERVAL) # 확인 딜레이
+                if targetData._gameStep == GAME_STEP.END: #상대가 게임 끝났다면
+                    return #동기화 중지
 
-                    if self._netStep == targetData._netStep: #동기 성공시
-                        #now = datetime.datetime.now() #동기 성공 시간 표시
-                        #print(str(self._netStep)+", "+str(now))
-                        if isSyncRound:
-                            if self._roundIndex != targetData._roundIndex: #라운드 강제 동기
-                                if self._roundIndex > targetData._roundIndex:
-                                    targetData._roundIndex = self._roundIndex
-                                else:
-                                    self._roundIndex = targetData._roundIndex
+                    # #now = datetime.datetime.now() #동기 성공 시간 표시
+                    # #print(str(self._netStep)+", "+str(now))
+                    # if isSyncRound:
+                    #     if self._roundIndex != targetData._roundIndex: #라운드 강제 동기
+                    #         if self._roundIndex > targetData._roundIndex:
+                    #             targetData._roundIndex = self._roundIndex
+                    #         else:
+                    #             self._roundIndex = targetData._roundIndex
 
-                        try:
-                            if syncMessage != None:
-                                await syncMessage.delete() #동기화 메시지 삭제     
-                        except:
-                            print("동기 메시지 삭제 에러")
-                            logging.error(traceback.format_exc())
-
-                        break
-
-                    i += 1
-                    if i > loopCnt:
-                        await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 연결 시간 초과\n"+chr(173)+" ```")
-                        await self.connectionTimeout()
-                        return False
-                    elif i > loopCnt / 5: #일정 시간 경과하면 동기화중이라는 메시지 표시
-                        if syncMessage == None:
-                            syncMessage = await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 동기화 중... 잠시만 기다려주세요.\n"+chr(173)+" ```")
+                i += 1
+                if i > loopCnt:
+                    await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 연결 시간 초과\n"+chr(173)+" ```")
+                    await self.connectionTimeout()
+                    return False
+                elif i > loopCnt / 5: #일정 시간 경과하면 동기화중이라는 메시지 표시
+                    if syncMessage == None:
+                        syncMessage = await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 동기화 중... 잠시만 기다려주세요.\n"+chr(173)+" ```")
         except:
             print("동기화 에러")
             logging.error(traceback.format_exc())
             return False
+
+        
+        try:
+            if syncMessage != None:
+                await syncMessage.delete() #동기화 메시지 삭제     
+        except:
+            print("동기 메시지 삭제 에러")
+            logging.error(traceback.format_exc())
 
         await asyncio.sleep(1) #상대도 동기할 수 있도록 1초 대기
         return True
@@ -1537,7 +1537,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         print(str(len(quizList)) + "개")
         for i in range(0, 50): #50문제만 뽑을거임
-            rd = random.randrange(0, len(quizList))  # 0부터 tmpList 크기 -1 만큼
+            rd = random.randint(0, len(quizList) - 1)  # 0부터 tmpList 크기 -1 만큼
             quiz = quizList[rd]  # 무작위 1개 선택
             self._quizList.append(quiz)  # 실제 목록에 추가
             del quizList[rd]  # 추출한 항목은 삭제
@@ -1640,9 +1640,9 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                             song = AudioSegment.from_mp3( audioName ) #오디오 자르기 가져오기
                             if length_in_secs > gameData._trimLength + 20: #노래 길이가 자를 시간 + 20만큼 크면
                                 #최적의 자르기 실행
-                                startTime = random.randrange(10, (length_in_secs - gameData._trimLength - 10)) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
+                                startTime = random.randint(10, (length_in_secs - gameData._trimLength - 10) - 1) #자르기 시작 시간 10초 ~ 총길이 - 자를 길이 - 10
                             else:
-                                startTime = random.randrange(0, length_in_secs - gameData._trimLength)
+                                startTime = random.randint(0, length_in_secs - gameData._trimLength - 1)
 
                             endTime = startTime + gameData._trimLength #지정된 길이만큼 자르기
                             startTime *= 1000 #s 를 ms로
@@ -1750,7 +1750,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             #     pass
 
             self._netStep = NET_STEP.QUESTION_READY
-            interval = Config.SYNC_INTERVAL/10 # 0.01초마다 확인, 문제 출제는 중요한 부분이라 0.01단위
+            #interval = Config.SYNC_INTERVAL/10 # 0.01초마다 확인, 문제 출제는 중요한 부분이라 0.01단위
+            interval = 0.01
             loopCnt = Config.MAX_CONNECTION / interval
             i = 0
             while self._netStep != NET_STEP.QUESTION_READY or self._targetData._netStep != NET_STEP.QUESTION_READY: #오디오 준비 동기화 될 때까지
@@ -1795,7 +1796,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
     async def nextRound(self):
         gameData = self
 
-        # rdWait = random.randrange(1,5)
+        # rdWait = random.randint(1,5)
         # print(str(self._guild.name)+ str(rdWait) +" 초")
         # await asyncio.sleep(rdWait)
         
@@ -1838,7 +1839,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         self._audioData = None
         self._quizUIFrame.initRound(self._voice.channel)
 
-
+        await asyncio.sleep(1.5) #상대도 동기할 수 있도록 1초 대기
         ###### 문제 출제
         if self.checkStop(): return
         self._netStep = NET_STEP.QUESTION
@@ -1856,13 +1857,13 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                                         
         ###### 정답 공개
         if self.checkStop(): return
-        self._netStep = NET_STEP.SHOWANSWER
-        if not await self.sync(isSyncRound=False): return #동기화
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
             return
         if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER or isError:  # 아직도 정답자 없거나 문제 발생시
             isError = False
             try:
+                # self._netStep = NET_STEP.SHOWANSWER #뭔가 문제 있는 듯, 필수 사항은 아니니 pass
+                # if not await self.sync(isSyncRound=False): return #동기화
                 await self.showAnswer(isWrong=True) #정답 공개
                 await asyncio.sleep(3)
             except:
@@ -2006,7 +2007,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         voice.stop()
         
-        # rdWait = random.randrange(3,20)
+        # rdWait = random.randint(3,20)
         # print(str(self._guild.name)+ str(rdWait) +" 초")
         # await asyncio.sleep(rdWait)
 
@@ -2073,7 +2074,28 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 winner = keys[0]
                 if multiplayScoreMap[winner] != 0: #1등이 0점 아니면
                     self.submitScoreboard(winner)
+
+        mvpUser = None
+        bestScore = 0
+
+        for user in gameData._scoreMap.keys():
+            score = gameData._scoreMap[user]
+            if score > bestScore:
+                bestScore = score
+                mvpUser = user
         
+        targetData = self._targetData
+        for user in targetData._scoreMap.keys():
+            score = targetData._scoreMap[user]
+            if score > bestScore:
+                bestScore = score
+                mvpUser = user
+
+        if mvpUser != None:
+            quizUIFrame._notice_text += chr(173)+"\n"+str(Config.EMOJI_ICON.ICON_TROPHY) + " " + "MVP　" + str(user.display_name) + str(bestScore) + " 점　" + chr(173)
+            playBGM(voice, BGM_TYPE.SUCCESS) #mvp발표
+            await quizUIFrame.update()
+
 
         await asyncio.sleep(4)
 
@@ -2114,7 +2136,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             if  limit > 1000: #시도 한계 설정
                 break
 
-            rd = random.randrange(0, answerLen)
+            rd = random.randint(0, answerLen - 1)
             if rd in hintIndex or answer[rd] == " ": #이미 인덱스에 있거나 공백이라면
                 continue
             else:
@@ -2310,7 +2332,7 @@ def playBGM(voice, bgmType): #BGM 틀기
             source = discord.FFmpegPCMAudio(Config.BGM_PATH + "bell.mp3")
         elif(bgmType == BGM_TYPE.LONGTIMER):
             tmpList = os.listdir(Config.BGM_PATH+"/longTimer/")
-            rd = random.randrange(0, len(tmpList))  # 0부터 tmpList 크기 -1 만큼
+            rd = random.randint(0, len(tmpList) - 1)  # 0부터 tmpList 크기 -1 만큼
             rdBgm = tmpList[rd]  # 무작위 1개 선택
             bgmName = Config.BGM_PATH+"/longTimer/"+rdBgm
             source = discord.FFmpegPCMAudio(bgmName)
@@ -2484,7 +2506,7 @@ async def stopCommand(ctx):  # ping 테스트
         if gameData._owner == ctx.message.author: #주최자라면
             await gameData.stop()
         else:
-            ctx.message.channel.send("```" + "퀴즈 중지는 주최자만이 가능합니다.\n음성 채널 관리 권한이 있다면 [ 봇 우클릭 -> 연결 끊기 ] 를 눌러도 종료가 가능합니다." + "```")
+            await ctx.message.channel.send("```" + "퀴즈 중지는 주최자만이 가능합니다.\n음성 채널 관리 권한이 있다면 [ 봇 우클릭 -> 연결 끊기 ] 를 눌러도 종료가 가능합니다." + "```")
     else:
         voice = get(bot.voice_clients, guild=ctx.guild)
         if voice and voice.is_connected():  # 음성대화 연결된 상태면

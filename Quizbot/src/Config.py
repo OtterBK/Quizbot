@@ -15,7 +15,7 @@ OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
-VERSION = "2.05"
+VERSION = "2.06"
 LAST_PATCH = "21/02/12"
 EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
@@ -23,7 +23,7 @@ BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=78806083166011401
 TOKEN = ""
 
 #멀티 플레이 관련
-SYNC_INTERVAL = 0.1 #동기 체크 딜레이
+SYNC_INTERVAL = 0.01 #동기 체크 딜레이
 MAX_CONNECTION = 30
 
 try:
@@ -97,6 +97,8 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_CHECK = "✅"
     ICON_CHAT = "📫"
     ICON_FIGHT = "🥊"
+    ICON_TROPHY = "🏆"
+    ICON_NET = "🙋‍♂️"
     
 
     CLOCK_0 = "🕛"
