@@ -1836,7 +1836,7 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         self._notice_text = Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n" +chr(173) + "\n"
         self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
         self._notice_text += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
-        self._notice_text += Config.EMOJI_ICON.ICON_GIT + " 소스코드 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
+        self._notice_text += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
         #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n" 
         self._notice_text += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
     

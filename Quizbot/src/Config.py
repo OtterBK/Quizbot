@@ -17,9 +17,9 @@ RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
 VERSION = "2.06"
-LAST_PATCH = "21/02/12"
+LAST_PATCH = "21/02/14"
 EMAIL_ADDRESS = "otter6975@gmail.com"
-BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot"
+BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot"
 
 TOKEN = ""
 NOTICE = ""
@@ -107,6 +107,7 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_FIX = "🛠️"
     ICON_GOOD = "👍"
     ICON_PATCHNOTE = "📗"
+    ICON_BOOK_RED = "📕"
     ICON_NOTE = "📜"
     ICON_CHECK = "✅"
     ICON_CHAT = "📫"

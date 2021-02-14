@@ -2485,7 +2485,30 @@ async def test4(ctx): #비동기 함수 실행하고 잊기 fire and forget
     asyncio.ensure_future(test2(ctx))  # fire and forget async_foo()
     asyncio.ensure_future(test3(ctx))  # fire and forget async_foo()
 
-    
+async def helpMessage(ctx): #도움말
+        sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
+        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!퀴즈 - 퀴즈 선택창을 생성합니다.\n"
+        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!중지 - 퀴즈를 강제로 중지합니다.\n"
+        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
+        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
+
+        sendStr += chr(173) + "\n"
+
+        sendStr += "봇 이름:　**" + "퀴즈봇2**\n"
+        sendStr += "봇 버전:　**" + Config.VERSION + "**\n"
+        sendStr += "제작 　:　**제육보끔#1916**\n"
+        sendStr += "패치일 :　" + Config.LAST_PATCH + "\n"
+
+        sendStr += chr(173) + "\n"
+
+        sendStr += Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n" +chr(173) + "\n"
+        sendStr += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
+        sendStr += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
+        sendStr += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
+        sendStr += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
+
+        await ctx.send("```" + chr(173) +"\n" + str(sendStr) + "\n```")
+
 
 # 봇이 접속(활성화)하면 아래의 함수를 실행하게 된다, 이벤트
 @bot.event
@@ -2495,12 +2518,24 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
   
     print("봇 이름:",bot.user.name,"봇 아이디:",bot.user.id,"봇 버전:",discord.__version__)
+    # for guild in bot.guilds:
+    #     print(guild.name)
     print(str(len(bot.guilds)) + "개의 서버 연결됨")
 
 
 @bot.command(pass_context=False, aliases=["ping"])  # ping 명령어 입력시
 async def pingCommand(ctx):  # ping 테스트
     await ctx.send(f"핑 : {round(bot.latency * 1000)}ms")
+
+
+@bot.command(pass_context=False, aliases=["도움", "도움말","명령어", "commands"])  # ping 명령어 입력시
+async def helpCommand(ctx):  # 도움말
+    await helpMessage(ctx)
+
+
+@bot.command(pass_context=False, aliases=["hellothisisverification"])  # ping 명령어 입력시
+async def checkAuthurCommand(ctx):  # 제작자 표시
+    await ctx.send("제육보끔#1916")
 
 
 @bot.command(pass_context=False, aliases=["중지"])  # 중지 명령어 입력시
