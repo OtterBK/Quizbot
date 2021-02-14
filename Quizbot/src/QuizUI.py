@@ -149,8 +149,8 @@ class Scoreboard(): #순위표
                     topScore = data[2]
                     
                     playerStat = PlayerStat(playerName)
-                    playerStat._playCount = playCount
-                    playerStat._topScore = topScore
+                    playerStat._playCount = int(playCount)
+                    playerStat._topScore = int(topScore)
 
                     self._score[playerName] = playerStat #순위표에 넣기
 
@@ -1144,12 +1144,6 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
         self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
 
-        matchingCnt = 0
-        for matchingQueue in matchingCategory.values():
-            matchingCnt += len(matchingQueue)
-
-        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_NET + "　매칭중인 서버 수: **"+str(matchingCnt)+"**\n"
-
         self._main_visible = True
 
         self._notice_visible = True
@@ -1180,12 +1174,7 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         self._sub_text = Config.EMOJI_ICON.ICON_LIST + "**퀴즈봇2 를 사용하는 다른 디스코드 서버와 대결을 할 수 있습니다.**\n"
         self._sub_text += "**자신의 디스코드 서버 인원과 협력하여 전적을 올려보세요!**\n"
         self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_TIP + "　**플레이할 카테고리를 선택해주세요.**\n"
-
-        matchingCnt = 0
-        for matchingQueue in matchingCategory.values():
-            matchingCnt += len(matchingQueue)
-
-        self._sub_text += chr(173)+"\n"+ Config.EMOJI_ICON.ICON_NET + "　매칭중인 서버 수: **"+str(matchingCnt)+"**\n"
+        self.getMainList() #매칭중인 큐 수를 새로고침하기 위해 불러와야함
 
     def getMainList(self):
 
@@ -1198,7 +1187,7 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
         quizList = os.listdir(allPath) #해당 경로의 모든 퀴즈 가져오기
 
         self._main_text = [] #메인 텍스트 초기화
-        self._absoluteMap = dict()
+        self._absoluteMap.clear()
 
         for tmpFile in quizList: #쓸모없는 파일은 무시
             if not os.path.isdir(allPath+tmpFile): #폴더가 아니면 패스
@@ -1207,6 +1196,12 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
             icon = getIcon(tmpFile) #파일명으로 아이콘 가져와보기
             fileName = tmpFile.split("&")[0] #실제 파일명만 긁어오기
             showText = icon+" "+fileName #표시할 항목명
+
+            if fileName in matchingCategory: #매칭 카테고리에 있는 항목명이면
+                matchingQueue = matchingCategory[fileName] #큐 가져옴
+                matchingCnt = len(matchingQueue) #매칭 중인 수
+                showText += "　[　**"+Config.EMOJI_ICON.ICON_NET+" "+str(matchingCnt)+"**　]"
+
             self._absoluteMap[showText] = tmpFile #절대 이름 설정
             self.addMain(showText) #메인 텍스트에 추가
 
@@ -1967,7 +1962,7 @@ def getDisplayOption(OptionType, value): #옵션 타입과 값에 따라 적절�
         elif value == 2:
             return "사용불가", "문제를 건너뛸 수 없습니다."
     elif OptionType == OPTION_TYPE.TRIM_LENGTH: #노래 길이일 경우
-            return str(value)+"초", "문제로 제시되는 음악 파일의 길이를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"노래 관련 퀴즈에서만 지원하는 기능이며 아래 퀴즈에서는 지원하지 않습니다.\n"+chr(173)+"\n"+"국내가요1\n"+"국내가요2\n"+"애니더빙곡1\n"+"애니더빙곡2\n"+"애니송1\n"+"애니송2\n"
+            return str(value)+"초", "문제로 제시되는 음악 파일의 길이를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"문제로 제시되는 노래의 재생구간은 매번 임의로 정해지는데\n이때 노래의 재생 길이를 변경합니다.\n노래 관련 퀴즈에서만 지원하는 기능이며 아래 퀴즈에서는 지원하지 않습니다.\n"+chr(173)+"\n"+"국내가요1\n"+"국내가요2\n"+"애니더빙곡1\n"+"애니더빙곡2\n"+"애니송1\n"+"애니송2\n"
     elif OptionType == OPTION_TYPE.REPEAT_COUNT: #반복 횟수의 경우
             return str(value)+"회", "문제로 제시되는 음악 파일의 반복 재생 횟수를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"노래 관련 퀴즈에서만 지원하는 기능입니다."
     

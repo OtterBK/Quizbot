@@ -243,6 +243,11 @@ class Quiz:
         quizUIFrame = gameData._quizUIFrame
         uiMessage = quizUIFrame._myMessage #UI 메시지
 
+        try:
+            asyncio.ensure_future(showNotice(self._chatChannel, noticeIndex=2)) #점검 있으면 표시
+        except:
+            pass
+
         await ui.clearChat(uiMessage.channel) #채팅 청소
         gameData._roundIndex += 1 #라운드 +1
         quizUIFrame._quizRound = gameData._roundIndex #퀴즈UI 라운드 갱신
@@ -2096,7 +2101,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 mvpUser = user
 
         if mvpUser != None:
-            quizUIFrame._notice_text += chr(173)+"\n"+str(Config.EMOJI_ICON.ICON_TROPHY) + " " + "MVP　" + str(mvpUser.display_name) + " " + str(bestScore) + "점 획득" + chr(173)
+            quizUIFrame._notice_text += chr(173)+"\n"+str(Config.EMOJI_ICON.ICON_TROPHY) + " " + "MVP　[ " + str(mvpUser.display_name) + " ], " + str(bestScore) + "점 획득" + chr(173)
             playBGM(voice, BGM_TYPE.SUCCESS) #mvp발표
             await quizUIFrame.update()
 
@@ -2487,27 +2492,49 @@ async def test4(ctx): #비동기 함수 실행하고 잊기 fire and forget
 
 async def helpMessage(ctx): #도움말
         sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
-        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!퀴즈 - 퀴즈 선택창을 생성합니다.\n"
-        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!중지 - 퀴즈를 강제로 중지합니다.\n"
-        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
-        sendStr = Config.EMOJI_ICON.ICON_BOOK_RED + "!보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !중지 - 퀴즈를 강제로 중지합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
 
         sendStr += chr(173) + "\n"
 
-        sendStr += "봇 이름:　**" + "퀴즈봇2**\n"
-        sendStr += "봇 버전:　**" + Config.VERSION + "**\n"
-        sendStr += "제작 　:　**제육보끔#1916**\n"
+        sendStr += "봇 이름:　" + "퀴즈봇2**\n"
+        sendStr += "봇 버전:　" + Config.VERSION + "\n"
+        sendStr += "제작 　:　제육보끔#1916\n"
         sendStr += "패치일 :　" + Config.LAST_PATCH + "\n"
 
         sendStr += chr(173) + "\n"
 
-        sendStr += Config.EMOJI_ICON.ICON_PHONE + " **Contact**\n" +chr(173) + "\n"
+        sendStr += Config.EMOJI_ICON.ICON_PHONE + " Contact\n" +chr(173) + "\n"
         sendStr += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
         sendStr += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
         sendStr += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
         sendStr += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
 
         await ctx.send("```" + chr(173) +"\n" + str(sendStr) + "\n```")
+
+
+async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 공지사항 번호
+    if channel == None: return
+    notice = ""
+
+    try:
+        f = open(Config.DATA_PATH+"notice"+str(noticeIndex)+".txt", 'r', encoding="utf-8" ) #공지
+        while True:
+            line = f.readline()
+            if not line:
+                break
+
+            notice += line
+        f.close()
+    except:
+        print("공지사항 로드 에러")
+
+    if notice != "":#공지가 있다면
+        await channel.send("```"+ chr(173) + "\n" +str(notice) + chr(173) + "\n"+"```")
+
+
 
 
 # 봇이 접속(활성화)하면 아래의 함수를 실행하게 된다, 이벤트
@@ -2590,11 +2617,13 @@ async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
         guild = ctx.guild #서버
         guildData = getGuildData(guild) #길드 데이터 없으면 초기화
 
+        try:
+            asyncio.ensure_future(showNotice(ctx.message.channel))
+        except:
+            pass
+
         await ui.createSelectorUI(ctx.channel) #UI 재설정
         guildData._selectorChannelID = ctx.channel.id #버튼 상호작용 채널 설정
-
-        if Config.NOTICE != "":#공지가 있다면
-            await ctx.message.channel.send("```"+ chr(173) + "\n" +str(Config.NOTICE) + chr(173) + "\n"+"```")
 
 @bot.event
 async def on_message(message):

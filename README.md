@@ -20,13 +20,13 @@
 
 <div align=center>
   
-[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot)](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot)&nbsp;&nbsp;&nbsp;<br>
+[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot)](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot)&nbsp;&nbsp;&nbsp;<br>
 ☝ 퀴즈봇 추가하기 
 </div>
 <br>
 
 #### ❔ 버튼을 눌러도 반응이 없다면 아래 링크를 클릭해주세요.
-🌐 [퀴즈봇](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=0&scope=bot "퀴즈봇 추가하기") 추가 링크
+🌐 [퀴즈봇](https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot "퀴즈봇 추가하기") 추가 링크
 
 <br>
 

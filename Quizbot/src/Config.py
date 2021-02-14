@@ -22,7 +22,6 @@ EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot"
 
 TOKEN = ""
-NOTICE = ""
 
 #멀티 플레이 관련
 SYNC_INTERVAL = 0.01 #동기 체크 딜레이
@@ -35,17 +34,6 @@ try:
 except:
     print("토큰 로드 에러")
 
-try:
-    f = open(DATA_PATH+"notice.txt", 'r', encoding="utf-8" ) #공지
-    while True:
-        line = f.readline()
-        if not line:
-            break
-
-        NOTICE += f.readline()
-    f.close()
-except:
-    print("토큰 로드 에러")
 
 #이모지 아이콘
 class EMOJI_ICON(enumerate): #이모지
