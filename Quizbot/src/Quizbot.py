@@ -2494,12 +2494,13 @@ async def helpMessage(ctx): #도움말
         sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !중지 - 퀴즈를 강제로 중지합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !현황 - 퀴즈별 진행중인 서버수를 확인합니다.\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
 
         sendStr += chr(173) + "\n"
 
-        sendStr += "봇 이름:　" + "퀴즈봇2**\n"
+        sendStr += "봇 이름:　" + "퀴즈봇2\n"
         sendStr += "봇 버전:　" + Config.VERSION + "\n"
         sendStr += "제작 　:　제육보끔#1916\n"
         sendStr += "패치일 :　" + Config.LAST_PATCH + "\n"
@@ -2532,7 +2533,7 @@ async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 �
         print("공지사항 로드 에러")
 
     if notice != "":#공지가 있다면
-        await channel.send("```"+ chr(173) + "\n" +str(notice) + chr(173) + "\n"+"```")
+        await channel.send("```"+ chr(173) + "\n" +str(notice) +"\n"+ chr(173) + "\n"+"```")
 
 
 
@@ -2578,6 +2579,23 @@ async def stopCommand(ctx):  # ping 테스트
         voice = get(bot.voice_clients, guild=ctx.guild)
         if voice and voice.is_connected():  # 음성대화 연결된 상태면
             await voice.disconnect() #끊기
+
+@bot.command(pass_context=False, aliases=["현황"])  # 중지 명령어 입력시
+async def quizStatusCommand(ctx):  # 퀴즈현황
+    localCnt = 0
+    multiCnt = 0
+    for guildData in dataMap.values():
+        if guildData._gameData != None:
+            if guildData._gameData._gameType == GAME_TYPE.MULTIPLAY:
+                multiCnt += 1
+            else:
+                localCnt += 1
+
+    matchingCnt = 0
+    for matchingQueue in ui.matchingCategory.values():
+        matchingCnt += len(matchingQueue)
+
+    await ctx.send("```" + chr(173) +"\n"+ str(len(bot.guilds)) +"개의 서버 중\n로컬 플레이: "+ str(localCnt) + "\n" + "멀티플레이: " + str(multiCnt) + "\n" + "매칭 중: " + str(matchingCnt) + "\n플레이하고 있습니다.\n" + chr(173) +"```")
 
 @bot.command(pass_context=False, aliases=["챗"])  # 중지 명령어 입력시
 async def multiplayChatCommand(ctx, *args):  # 멀티플레이 채팅

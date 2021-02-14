@@ -540,7 +540,7 @@ class CategorySelectFrame(QFrame): #카테고리 선택 화면
         self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_SEARCH +" 카테고리 선택　　　　]"
 
         self._sub_visible = True
-        self._sub_text = "**카테고리를 선택해주세요.**"
+        self._sub_text += "**카테고리를 선택해주세요.**"
 
         self._notice_visible = True
 
@@ -2200,8 +2200,10 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
     nowPage = int(frame._page_nowPage) #현재 페이지 가져옴
     maxPage = math.ceil(len(mainList) / LIST_PER_PAGE)  #최대 페이지 설정
     if nowPage > maxPage - 1: #페이지 초과시 max로
+        frame._page_nowPage = maxPage - 1
         nowPage = maxPage - 1
     if nowPage < 0: #음수 방지
+        frame._page_nowPage = 0
         nowPage = 0
 
 
