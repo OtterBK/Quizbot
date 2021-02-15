@@ -107,7 +107,7 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_BOOK_RED = "📕"
     ICON_NOTE = "📜"
     ICON_CHECK = "✅"
-    ICON_CHAT = "📫"
+    ICON_CHAT = "🗨"
     ICON_FIGHT = "🥊"
     ICON_TROPHY = "🏆"
     ICON_NET = "🙋‍♂️"

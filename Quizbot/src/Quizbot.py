@@ -572,8 +572,13 @@ class Quiz:
 
 
     def checkStop(self): #퀴즈 중지 확인
-        channel = discord.utils.get(bot.get_all_channels(), guild__name=str(self._guild.name), name=str(self._chatChannel.name)) #채널 가져오기
-        if channel == None or self._voice == None or not self._voice.is_connected():  # 봇 음성 객체가 없다면 퀴즈 종료, 채널이 None일때도
+
+        guild = self._guild
+        channel = self._chatChannel
+
+        quizChannel = guild.get_channel(channel.id)
+
+        if quizChannel == None or self._voice == None or not self._voice.is_connected():  # 봇 음성 객체가 없다면 퀴즈 종료, 채널이 None일때도
             guild = self._guild
             if guild in dataMap:
                 dataMap[guild]._gameData = None #퀴즈 데이터 삭제
@@ -706,6 +711,7 @@ class Quiz:
 
         quizUIFrame._customText_visible = True
         quizUIFrame._customFooter_text = Config.EMOJI_ICON.ICON_NOTICE + " 퀴즈가 종료되었습니다."
+        Config.LOGGER.info(self._guild.name+" 에서 " + self._gameName + " 퀴즈 종료")
         playBGM(voice, BGM_TYPE.ENDING)
         await quizUIFrame.update()
         await asyncio.sleep(2)
@@ -759,7 +765,7 @@ class Quiz:
                 hintStr += Config.EMOJI_ICON.ICON_BLIND
             index += 1
 
-        await gameData._chatChannel.send("``` "+chr(173)+"\n""요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+"글자 힌트\n"+str(hintStr)+"\n"+chr(173)+"```")
+        await gameData._chatChannel.send("```markdown\n"+chr(173)+"\n""## 요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+" <힌트>　"+chr(173)+" "+str(hintStr)+"\n"+chr(173)+"```")
 
 
     async def skip(self): #스킵 사용
@@ -778,7 +784,7 @@ class Quiz:
             gameData._gameStep = GAME_STEP.WAIT_FOR_NEXT  # 다음 라운드 대기로 변경
             gameData._isSkiped = True #스킵중 표시
 
-            await gameData._chatChannel.send("``` "+chr(173)+"\n요청에 의해 문제를 건너뜁니다.\n"+chr(173)+" ```")
+            await gameData._chatChannel.send("```markdown\n"+chr(173)+"\n## 요청에 의해 문제를 건너뜁니다.\n"+chr(173)+" ```")
 
             voice = gameData._voice
             roundChecker = gameData._roundIndex  # 스킵한 라운드 저장
@@ -1527,7 +1533,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         targetData = self._targetData
         if targetData == None: return
 
-        sendMsg = "```"+Config.EMOJI_ICON.ICON_CHAT+" [ " + str(self._guild.name) + " ] 에서 메시지를 보냈습니다.\n" + Config.getRandomHumanIcon() + " " + str(author.display_name) + "> " + chatMessage + "```"
+        sendMsg = "```markdown\n##"+Config.EMOJI_ICON.ICON_CHAT+" [" + str(self._guild.name) + "]  에서 메세지를 보냈습니다. \n" + Config.getRandomHumanIcon() + " [" + str(author.display_name) + "] ( " + chatMessage + ")\n```"
 
         asyncio.ensure_future(self._chatChannel.send(sendMsg))
         asyncio.ensure_future(targetData._chatChannel.send(sendMsg))
@@ -2113,6 +2119,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         quizUIFrame._customText_visible = True
         quizUIFrame._customFooter_text = Config.EMOJI_ICON.ICON_NOTICE + " 퀴즈가 종료되었습니다."
+        Config.LOGGER.info(self._guild.name+" 에서 " + self._gameName + " 퀴즈 종료")
         playBGM(voice, BGM_TYPE.ENDING)
         await quizUIFrame.update()
         await asyncio.sleep(2)
@@ -2165,8 +2172,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 hintStr += Config.EMOJI_ICON.ICON_BLIND
             index += 1
 
-        asyncio.ensure_future(gameData._chatChannel.send("``` "+chr(173)+"\n""요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+"글자 힌트\n"+str(hintStr)+"\n"+chr(173)+"```"))
-        asyncio.ensure_future(targetData._chatChannel.send("``` "+chr(173)+"\n""요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+"글자 힌트\n"+str(hintStr)+"\n"+chr(173)+"```"))
+        asyncio.ensure_future(gameData._chatChannel.send("```markdown\n"+chr(173)+"\n""## 요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+" <힌트>　"+chr(173)+"* "+str(hintStr)+"\n"+chr(173)+"```"))
+        asyncio.ensure_future(targetData._chatChannel.send("```markdown\n"+chr(173)+"\n""## 요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+" <힌트>　"+chr(173)+"* "+str(hintStr)+"\n"+chr(173)+"```"))
         
 
     ##이벤트
@@ -2199,6 +2206,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
 dataMap = dict()  # 데이터 저장용 해쉬맵
 QUIZ_MAP = dict()  # 퀴즈 정보 저장용
+newGuilds = []
 
 ########################
 
@@ -2409,6 +2417,9 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
     if voiceChannel == None:
         quizInfoFrame._notice_text = Config.EMOJI_ICON.ICON_WARN + " 음성 채널을 찾을 수 없음, 다시 시도해보세요."
 
+    if guild.id in newGuilds:
+        newGuilds.remove(guild.id)
+
     #퀴즈 시작
     voice = get(bot.voice_clients, guild=guild)
     if voice == None or not voice.is_connected():  # 음성 연결 안됐다면
@@ -2548,8 +2559,8 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
   
     Config.LOGGER.info("봇 이름:" + str(bot.user.name) + ", 봇 아이디:" + str(bot.user.name) + ", 봇 버전:" + discord.__version__)
-    # for guild in bot.guilds:
-    #     print(guild.name)
+    for guild in bot.guilds:
+        print(guild.name)
     Config.LOGGER.info(str(len(bot.guilds)) + "개의 서버 연결됨")
 
 
@@ -2610,12 +2621,12 @@ async def multiplayChatCommand(ctx, *args):  # 멀티플레이 채팅
         gameData = guldData._gameData  # 데이터 맵에서 해당 길드의 게임 데이터 가져오기
         if(gameData == None):  # 게임데이터가 없으면 return
             return
-        if(gameData._gameStep == GAME_STEP.START or gameData._gameStep == GAME_STEP.END):  # 룰 설명중, 엔딩중이면
-            asyncio.ensure_future(message.delete())
-            return
         if gameData._gameType == GAME_TYPE.MULTIPLAY: #멀티 플레이 게임중이면
             asyncio.ensure_future(message.delete())
             await gameData.sendMultiplayMessage(ctx.message.author, chat)
+        elif(gameData._gameStep == GAME_STEP.START or gameData._gameStep == GAME_STEP.END):  # 룰 설명중, 엔딩중이면
+            asyncio.ensure_future(message.delete())
+
 
 @bot.command(pass_context=False, aliases=["보이스동기화"])  # 보이스동기화 명령어 입력시
 async def multiplayVoiceSyncCommand(ctx):  # 멀티플레이 채팅
@@ -2627,7 +2638,6 @@ async def multiplayVoiceSyncCommand(ctx):  # 멀티플레이 채팅
         return
     if(gameData._gameStep == GAME_STEP.START or gameData._gameStep == GAME_STEP.END):  # 룰 설명중, 엔딩중이면
         asyncio.ensure_future(message.delete())
-        return
     if gameData._gameType == GAME_TYPE.MULTIPLAY: #멀티 플레이 게임중이면
         await gameData.toggleVoiceSync()
 
@@ -2644,6 +2654,24 @@ async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
 
         await ui.createSelectorUI(ctx.channel) #UI 재설정
         guildData._selectorChannelID = ctx.channel.id #버튼 상호작용 채널 설정
+
+        if guild.id in newGuilds:
+
+            await ctx.send("> 🛑 어라? 퀴즈봇을 추가하고 **새로운 채널**을 생성하지 않으신 것 같은데 괜찮으세요?\n> ❗ 퀴즈가 진행되는 채널은 **채팅 청소**를 진행하여 ***모든 메시지가 사라집니다!***\n "+
+                    "> 😃 퀴즈봇 전용 채팅 채널을 생성 후 진행하는 것을 추천드려요!\n" + chr(173) + "\n" + "> 📔 이 메세지는 퀴즈를 한 번이라도 시작하면 더 이상 표시되지 않습니다.\n")
+
+
+@bot.event
+async def on_guild_join(guild): #서버 참가시
+    newGuilds.append(guild.id)
+
+
+@bot.event
+async def on_guild_channel_create(channel): #채팅 채널 생성시
+    guild = channel.guild
+
+    if guild.id in newGuilds:
+        newGuilds.remove(guild.id)
 
 @bot.event
 async def on_message(message):
@@ -2744,5 +2772,13 @@ async def on_command_error(ctx, error):
 
 ui.initializing(bot, startQuiz) #QuizSelector 초기화
 #한국 봇 서버 업데이트
-koreaBot = koreanbots.Client(bot, Config.KOREA_BOT_TOKEN)
-bot.run(Config.TOKEN)  # 봇 실행
+if Config.KOREA_BOT_TOKEN != "":
+    koreaBot = koreanbots.Client(bot, Config.KOREA_BOT_TOKEN)
+else:
+    Config.LOGGER.warning("한국 봇 서버 토큰 누락")
+
+if Config.TOKEN != "":
+    bot.run(Config.TOKEN)  # 봇 실행
+else:
+    Config.LOGGER.critical("디스코드 봇 토큰 누락")
+

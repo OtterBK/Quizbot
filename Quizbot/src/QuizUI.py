@@ -1,4 +1,5 @@
 #필요 라이브러리 
+from typing import OrderedDict
 import discord
 from discord import player
 from discord.ext import commands
@@ -12,7 +13,7 @@ import math
 import Config
 import sys, traceback
 import json
-
+import collections
 
 #공용
 global bot  # 봇 객체 
@@ -206,7 +207,7 @@ class Scoreboard(): #순위표
         for player in sortPlayer: #데이터 재삽입
             tmpMap[player] = scoreMap[player]
         
-        scoreMap = tmpMap
+        self._score = tmpMap
 
 
 class MultiplayScoreboard(Scoreboard):
@@ -227,7 +228,7 @@ class MultiplayScoreboard(Scoreboard):
 
                 for guildID in scoreData.keys():
 
-                    guildName = scoreData[guildID]["길드명"]
+                    guildName = scoreData[guildID][0]["길드명"]
 
                     multiplayStat = MultiplayStat(guildID, guildName)
 
@@ -306,7 +307,7 @@ class MultiplayScoreboard(Scoreboard):
         for guildID in sortGuild: #데이터 재삽입
             tmpMap[guildID] = scoreMap[guildID]
         
-        scoreMap = tmpMap
+        self._score = tmpMap
 
 class RankData(): #랭킹 저장용
     
