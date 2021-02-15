@@ -1,5 +1,6 @@
 
 import random
+import logging
 
 # 개발자 페이지에서 봇에 대한 토큰 텍스트를 가져온 뒤, TOKEN에 대입하자
 
@@ -16,16 +17,18 @@ OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
-VERSION = "2.06"
-LAST_PATCH = "21/02/14"
+VERSION = "2.07"
+LAST_PATCH = "21/02/15"
 EMAIL_ADDRESS = "otter6975@gmail.com"
-BOT_LINK = "https://discord.com/api/oauth2/authorize?client_id=788060831660114012&permissions=8&scope=bot"
+BOT_LINK = "https://koreanbots.dev/bots/788060831660114012"
 
 TOKEN = ""
+KOREA_BOT_TOKEN = ""
 
 #멀티 플레이 관련
 SYNC_INTERVAL = 0.01 #동기 체크 딜레이
 MAX_CONNECTION = 30
+
 
 try:
     f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
@@ -34,6 +37,12 @@ try:
 except:
     print("토큰 로드 에러")
 
+try:
+    f = open(DATA_PATH+"korea_bot_token.txt", 'r', encoding="utf-8" )
+    KOREA_BOT_TOKEN = f.readline().strip()
+    f.close()
+except:
+    print("토큰 로드 에러")
 
 #이모지 아이콘
 class EMOJI_ICON(enumerate): #이모지
@@ -133,6 +142,32 @@ class EMOJI_ICON(enumerate): #이모지
     OX = ["⭕", "❌"] #ox퀴즈용
 
 
+def __get_logger():
+    """로거 인스턴스 반환
+    """
+
+    __logger = logging.getLogger('logger')
+
+    # 로그 포멧 정의
+    # formatter = logging.Formatter(
+    #     '%(levelname)s##%(asctime)s##%(message)s >> @@file::%(filename)s@@line::%(lineno)s')
+
+    formatter = logging.Formatter("%(asctime)s   >>   %(message)s")
+
+    # 스트림 핸들러 정의
+    stream_handler = logging.StreamHandler()
+    # 각 핸들러에 포멧 지정
+    stream_handler.setFormatter(formatter)
+    # 로거 인스턴스에 핸들러 삽입
+    __logger.addHandler(stream_handler)
+    # 로그 레벨 정의
+    __logger.setLevel(logging.INFO)
+
+    return __logger
+
+
+
+
 def getAlphabetFromIndex(index): 
     return EMOJI_ICON.ALPHABET[index]
 
@@ -161,3 +196,5 @@ def getMedalFromNumber(index): #정수값에 알맞은 메달 이모지 반환
 def getRandomHumanIcon():
     return random.choice(EMOJI_ICON.ICON_HUMAN)
 
+
+LOGGER = __get_logger()

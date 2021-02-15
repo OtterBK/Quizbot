@@ -1,5 +1,6 @@
 #필요 라이브러리 
 import discord
+from discord import player
 from discord.ext import commands
 from discord.utils import get
 import os
@@ -10,8 +11,7 @@ import random
 import math   
 import Config
 import sys, traceback
-import logging
-logging.basicConfig(level=logging.ERROR) #로깅 설정
+import json
 
 
 #공용
@@ -68,44 +68,31 @@ class QOption(): #옵션
         self.load() #설정값 로드
 
     def load(self):
-        optionFile = Config.OPTION_PATH + str(self._guildID) + ".option"  #길드 id이름으로 된 옵션값 경로
-        if os.path.isfile(optionFile):
-            try:
-                f = open(optionFile, 'r', encoding="utf-8" )
-                while True:
-                    line = f.readline()
-                    if not line: break
+        optionFile = Config.OPTION_PATH + str(self._guildID) + ".json"  #길드 id이름으로 된 옵션값 경로
 
-                    if line.startswith("&hintType: "):
-                        hintType = line.replace("&hintType: ", "").strip()
-                        self._hintType = int(hintType)
-                    elif line.startswith("&skipType: "):
-                        skipType = line.replace("&skipType: ", "").strip()
-                        self._skipType = int(skipType)
-                    elif line.startswith("&trimLength: "):
-                        trimLength = line.replace("&trimLength: ", "").strip()
-                        self._trimLength = int(trimLength)
-                    elif line.startswith("&trimLength: "):
-                        repeatCount = line.replace("&repeatCount: ", "").strip()
-                        self._repeatCount = int(repeatCount)
-                f.close()
-            except:
-                print("옵션 로드 에러, "+str(self._guildID))
-                logging.error(traceback.format_exc())
+        if os.path.isfile(optionFile):
+
+            with open(optionFile, "r", encoding="utf-8") as json_file:
+                optionData = json.load(json_file)[0]
+
+                self._hintType = int(optionData["hintType"])
+                self._skipType = int(optionData["skipType"])
+                self._trimLength = int(optionData["trimLength"])
+                self._repeatCount = int(optionData["repeatCount"])
 
     def save(self):
-        optionFile = Config.OPTION_PATH + str(self._guildID) + ".option"  #길드 id이름으로 된 옵션값 경로
+        optionFile = Config.OPTION_PATH + str(self._guildID) + ".json"  #길드 id이름으로 된 옵션값 경로
 
-        try:
-            f = open(optionFile, 'w', encoding="utf-8" )
-            f.write("&hintType: " + str(self._hintType) + "\n")
-            f.write("&skipType: " + str(self._skipType) + "\n")
-            f.write("&trimLength: " + str(self._trimLength) + "\n")
-            f.write("&repeatCount: " + str(self._repeatCount) + "\n")
-            f.close()
-        except:
-            print("옵션 저장 에러, "+str(self._guildID))
-            logging.error(traceback.format_exc())
+        data = []
+        data.append({
+            "hintType": self._hintType,
+            "skipType": self._skipType,
+            "trimLength": self._trimLength,
+            "repeatCount": self._repeatCount,
+        })
+
+        with open(optionFile, 'w', encoding="utf-8") as outfile:
+            json.dump(data, outfile, indent=4)
 
     
 class PlayerStat(): #플레이어 스탯 정보
@@ -135,46 +122,41 @@ class Scoreboard(): #순위표
         self._score = dict()
 
     def loadScore(self): #순위 불러오기
-        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".json"  #길드 id, 퀴즈명이름으로 된 순위표 경로
         if os.path.isfile(rankFile):
-            try:
-                f = open(rankFile, 'r', encoding="utf-8" )
-                while True:
-                    line = f.readline()
-                    if not line: break
 
-                    data = line.split("&$") #미리 정한 구분자로 파싱
-                    playerName = data[0]
-                    playCount = data[1] 
-                    topScore = data[2]
-                    
+            with open(rankFile, "r", encoding="utf-8") as json_file:
+                scoreData = json.load(json_file)
+
+                for playerName in scoreData.keys():
+
                     playerStat = PlayerStat(playerName)
-                    playerStat._playCount = int(playCount)
-                    playerStat._topScore = int(topScore)
+
+                    playerStat._playCount = int(scoreData[playerName][0]["플레이횟수"])
+                    playerStat._topScore = int(scoreData[playerName][0]["최고점수"])
 
                     self._score[playerName] = playerStat #순위표에 넣기
 
-                f.close()
-            except:
-                print("플레이어 스탯 로드 에러, "+str(rankFile))
-                logging.error(traceback.format_exc())
+        self.sort() #정렬한번
 
     def saveScore(self): #순위표 저장
-        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
-        try:
-            f = open(rankFile, 'w', encoding="utf-8" )
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".json"  #길드 id, 퀴즈명이름으로 된 순위표 경로
 
-            for playerName in self._score.keys():
-                playerStat = self._score[playerName] #플레이어 스탯 가져오기
-                f.write(str(playerStat._playerName)+"&$")
-                f.write(str(playerStat._playCount)+"&$")
-                f.write(str(playerStat._topScore)+"&$")
-                f.write("\n")
+        data = {}
+        for playerName in self._score.keys():
 
-            f.close()
-        except:
-            print("순위표 저장 에러, "+str(self._guildID))
-            logging.error(traceback.format_exc())
+            playerStat = self._score[playerName] #플레이어 스탯 가져오기
+
+            data[playerName] = []
+            data[playerName].append({
+                "이름": playerStat._playerName,
+                "플레이횟수": playerStat._playCount,
+                "최고점수": playerStat._topScore
+            })
+
+        with open(rankFile, 'w', encoding="utf-8") as outfile:
+            json.dump(data, outfile, indent=4)
+
 
     
     def mergeScore(self, scoreMap): #순위 병합
@@ -237,64 +219,46 @@ class MultiplayScoreboard(Scoreboard):
 
 
     def loadScore(self): #순위 불러오기
-        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".json"  #길드 id, 퀴즈명이름으로 된 순위표 경로
         if os.path.isfile(rankFile):
 
-            f = open(rankFile, 'r', encoding="utf-8" )
-            while True:
-                try:
+            with open(rankFile, "r", encoding="utf-8") as json_file:
+                scoreData = json.load(json_file)
 
-                    line = f.readline()
-                    if not line: break
+                for guildID in scoreData.keys():
 
-                    data = line.split("&$") #미리 정한 구분자로 파싱
-                    guildID = data[0]
-                    guildName = data[1]
-                    winCount = data[2] 
-                    defeatCout = data[3]
-                    playCout = data[4]
-
-                    for tmpGuild in bot.guilds:
-                        if str(tmpGuild.id) == str(tmpGuild.id):
-                            guild = tmpGuild
-                            guildName = guild.name #서버명 갱신
+                    guildName = scoreData[guildID]["길드명"]
 
                     multiplayStat = MultiplayStat(guildID, guildName)
-                    multiplayStat._multiStat_win = int(winCount)
-                    multiplayStat._multiStat_defeat = int(defeatCout)
-                    multiplayStat._multiStat_play = int(playCout)
+
+                    multiplayStat._multiStat_win = int(scoreData[guildID][0]["승리"])
+                    multiplayStat._multiStat_defeat = int(scoreData[guildID][0]["패배"])
+                    multiplayStat._multiStat_play = int(scoreData[guildID][0]["플레이횟수"])
 
                     self._score[guildID] = multiplayStat #순위표에 넣기
-
-                except:
-                    print("멀티 플레이 스탯 로드 에러, "+str(rankFile))
-                    logging.error(traceback.format_exc())
-
-
-            f.close()
 
         self.sort() #정렬 한번
 
     def saveScore(self): #순위표 저장
-        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".scoreboard"  #길드 id, 퀴즈명이름으로 된 순위표 경로
+        rankFile = Config.RANK_PATH + str(self._guildID) + "/" + self._quizName + ".json"  #길드 id, 퀴즈명이름으로 된 순위표 경로
 
-        f = open(rankFile, 'w', encoding="utf-8")
 
+        data = {}
         for guildID in self._score.keys():
-            try:
-                multiplayStat = self._score[guildID]  # 멀티플레이 스탯 가져오기
-                f.write(str(multiplayStat._guildID)+"&$")
-                f.write(str(multiplayStat._guildName)+"&$")
-                f.write(str(multiplayStat._multiStat_win)+"&$")
-                f.write(str(multiplayStat._multiStat_defeat)+"&$")
-                f.write(str(multiplayStat._multiStat_play)+"&$")
-                f.write("\n")
-            except:
-                print("멀티 순위표 저장 에러, "+str(self._guildID))
-                logging.error(traceback.format_exc())
 
-        f.close()
+            multiplayStat = self._score[guildID]  # 멀티플레이 스탯 가져오기
 
+            data[guildID] = []
+            data[guildID].append({
+                "길드id": multiplayStat._guildID,
+                "길드명": multiplayStat._guildName,
+                "승리": multiplayStat._multiStat_win,
+                "패배": multiplayStat._multiStat_defeat,
+                "플레이횟수": multiplayStat._multiStat_play
+            })
+
+        with open(rankFile, 'w', encoding="utf-8") as outfile:
+            json.dump(data, outfile,indent=4)
 
     
     def mergeScore(self, scoreMap): #순위 병합
@@ -362,8 +326,8 @@ class RankData(): #랭킹 저장용
 
         self._localRank.clear()
         for optionFile in os.listdir(rankPath):
-            if optionFile.endswith(".scoreboard"): #확장자가 .scoreboard 인 경우에만
-                quizName = optionFile.replace(".scoreboard", "") #확장자 떼어내기
+            if optionFile.endswith(".json"): #확장자가 .scoreboard 인 경우에만
+                quizName = optionFile.replace(".json", "") #확장자 떼어내기
                 scoreboard = Scoreboard(self._guildID, quizName) #순위표 생성
                 scoreboard.loadScore() #로드
                 self._localRank[quizName] = scoreboard
@@ -383,8 +347,8 @@ class MultiplayRankData(RankData): #멀티플레이 랭킹 저장용
 
         self._localRank.clear()
         for optionFile in os.listdir(rankPath):
-            if optionFile.endswith(".scoreboard"): #확장자가 .scoreboard 인 경우에만
-                quizName = optionFile.replace(".scoreboard", "") #확장자 떼어내기
+            if optionFile.endswith(".json"): #확장자가 .scoreboard 인 경우에만
+                quizName = optionFile.replace(".json", "") #확장자 떼어내기
                 scoreboard = MultiplayScoreboard(self._guildID, quizName) #순위표 생성
                 scoreboard.loadScore() #로드
                 self._localRank[quizName] = scoreboard
@@ -444,7 +408,7 @@ class QFrame:
         self._myMessage = message
     
     async def action(self, reaction, user, selectorData): #이벤트
-        print(str(user) + ", " + str(reaction.emoji))
+        Config.LOGGER.info(str(user) + ", " + str(reaction.emoji))
 
         emoji = reaction.emoji # 반응한 이모지 가져오기
 
@@ -540,7 +504,8 @@ class CategorySelectFrame(QFrame): #카테고리 선택 화면
         self._title_text = chr(173)+"[　　　　"+ Config.EMOJI_ICON.ICON_SEARCH +" 카테고리 선택　　　　]"
 
         self._sub_visible = True
-        self._sub_text += "**카테고리를 선택해주세요.**"
+        self._sub_text = Config.EMOJI_ICON.ICON_LIST + " 동일한 서버내 인원끼리 퀴즈를 진행합니다.\n"
+        self._sub_text += chr(173)+ "\n" +"**카테고리를 선택해주세요.**"
 
         self._notice_visible = True
 
@@ -752,8 +717,8 @@ class QuizInfoFrame(QFrame):
                     infoText += line
             f.close()
         except:
-            print("파일 로드 에러, "+infoPath)
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("파일 로드 에러, "+infoPath)
+            Config.LOGGER.error(traceback.format_exc())
             infoText = "퀴즈 정보를 불러올 수 없습니다."
             
         
@@ -923,8 +888,8 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
                     infoText += line
             f.close()
         except:
-            print("파일 로드 에러, "+infoPath)
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("파일 로드 에러, "+infoPath)
+            Config.LOGGER.error(traceback.format_exc())
             infoText = "퀴즈 정보를 불러올 수 없습니다."
         
         self._quizDesc = infoText
@@ -933,8 +898,8 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         try:
             await showFrame(self._myMessage, self, isPopUp=False)
         except:
-            print("퀴즈 UI 업데이트 에러, UI 재생성")
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("퀴즈 UI 업데이트 에러, UI 재생성")
+            Config.LOGGER.error(traceback.format_exc())
             quizUIEmbed = discord.Embed(title="UI 재생성 중...", url=None, description="잠시만 기다려주세요.\n", color=discord.Color.blue())
             quizUIEmbed.set_author(name=bot.user.name, url="",
                         icon_url=bot.user.avatar_url)
@@ -1325,8 +1290,8 @@ class MultiplayInfoFrame(QFrame):
                         infoText += line
             f.close()
         except:
-            print("파일 로드 에러, "+infoPath)
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("파일 로드 에러, "+infoPath)
+            Config.LOGGER.error(traceback.format_exc())
             infoText = "퀴즈 정보를 불러올 수 없습니다."
             
         self._pathList = pathList
@@ -1355,8 +1320,8 @@ class MultiplayInfoFrame(QFrame):
             await showFrame(self._myMessage, self, isPopUp=False)
         except:
             self._stopFlag = True
-            print("매칭 메시지 에러 발생")
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("매칭 메시지 에러 발생")
+            Config.LOGGER.error(traceback.format_exc())
 
     async def startMatch(self, owner, selectorData):
         if not self._stopFlag: #이미 매칭중이면
@@ -1374,6 +1339,8 @@ class MultiplayInfoFrame(QFrame):
             await self.update()
             return
 
+
+        Config.LOGGER.info("매칭 탐색 시작 "+ str(self._quizName) +", " + str(self._myMessage.guild.name))
         self._stopFlag = False
         voiceChannel = owner.voice.channel  # 호출자의 음성 채널 얻기
         voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
@@ -1401,7 +1368,7 @@ class MultiplayInfoFrame(QFrame):
                     self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + "　" + self._quizName +" 카테고리를 매칭중인 서버 **" + str(len(matchingQueue)) + "개**"
                     await self.update()
                 except:
-                    print("매칭 취소 메시지 표시 에러")
+                    Config.LOGGER.error("매칭 취소 메시지 표시 에러")
 
                 return
 
@@ -1458,7 +1425,7 @@ class MultiplayInfoFrame(QFrame):
                         try:
                             voice.play(discord.FFmpegPCMAudio(Config.BGM_PATH + "MATCH_FIND.mp3"))
                         except:
-                            print("BGM play error")
+                            Config.LOGGER.error("BGM play error")
                 else:
                     self._notice_text += "대전 상대를 탐색 중... " + str(self._waitSec) + "초"
                     isConnecting = False
@@ -1487,7 +1454,7 @@ class MultiplayInfoFrame(QFrame):
                 self._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._target._myMessage.guild.name) + "**\n" + chr(173) + "\n"
                 self._notice_text += Config.EMOJI_ICON.ICON_CHECK+" 연결 성공! 대전을 시작합니다!"
                 await self.update()
-                print("멀티플레이 시작 "+ str(self._quizName) +", " + str(self._myMessage.guild.name))
+                Config.LOGGER.info("멀티플레이 시작 "+ str(self._quizName) +", " + str(self._myMessage.guild.name))
                 await asyncio.sleep(3)
                 await fun_startQuiz(self, owner, forceStart=True) #퀴즈 시작
 
@@ -1650,7 +1617,7 @@ class SettingValueFrame(QFrame): #설정 값 변경 화면
 
 
     async def action(self, reaction, user, selectorData): 
-        print(str(user) + ", " + str(reaction.emoji))
+        Config.LOGGER.info(str(user) + ", " + str(reaction.emoji))
 
         emoji = reaction.emoji # 반응한 이모지 가져오기
 
@@ -1807,7 +1774,7 @@ class PatchNoteInfoFrame(QFrame):
                 infoText += line
             f.close()
         except:
-            print("파일 로드 에러, "+infoPath)
+            Config.LOGGER.error("파일 로드 에러, "+infoPath)
             infoText = "패치 내역를 불러올 수 없습니다."
         
         self._sub_text = infoText
@@ -1877,8 +1844,8 @@ def loadOption(): #옵션 파일 로드
     optionMap["-1"] = multiplayOption
 
     for optionFile in os.listdir(Config.OPTION_PATH):
-        if optionFile.endswith(".option"): #확장자가 .option 인 경우에만
-            optionFile = optionFile.replace(".option", "") #확장자 떼어내기
+        if optionFile.endswith(".json"): #확장자가 .option 인 경우에만
+            optionFile = optionFile.replace(".json", "") #확장자 떼어내기
             option = QOption(optionFile)
             optionMap[optionFile] = option
 
@@ -1993,8 +1960,8 @@ async def clearChat(chatChannel): #메시지 삭제
     try:
         await chatChannel.purge(check=check, limit=number)
     except:
-        print("clearchat error")
-        logging.error(traceback.format_exc())
+        Config.LOGGER.error("clearchat error")
+        Config.LOGGER.error(traceback.format_exc())
 
 
 def removeQuizUI(guild): #퀴즈 UI 프레임 삭제
@@ -2163,7 +2130,10 @@ async def setFrame(message, frame): #메시지에 해당 프레임을 설정
     frame.paint(message) #프레임 표시 이벤트
     selectorEmbed = getEmbedFromFrame(frame) 
 
-    await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+    try:
+        await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+    except:
+        Config.LOGGER.warning(traceback.format_exc())
 
 
 async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성
@@ -2188,8 +2158,8 @@ async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성
         else:
             message = await channel.send(embed=embed) # 메시지 객체 업데이트 
     except:
-        print("메시지 에러 2")
-        logging.error(traceback.format_exc())
+        Config.LOGGER.error("메시지 에러 2")
+        Config.LOGGER.error(traceback.format_exc())
     
     frame.paint(message) #프레임 표시 이벤트
 

@@ -15,11 +15,11 @@ from mutagen.mp3 import MP3
 from pydub import AudioSegment
 from shutil import copyfile
 import sys, traceback
-import logging
 import datetime
 from discord.ext.commands import CommandNotFound
+import koreanbots
 
-logging.basicConfig(level=logging.ERROR) #로깅 설정
+
 random.seed() #시드 설정
 
 
@@ -176,7 +176,7 @@ class Quiz:
             quizUIFrame._sub_text += Config.EMOJI_ICON.ICON_TIP + "**　[ "+ Config.EMOJI_ICON.ICON_KEYBOARD +" 주관식 퀴즈 정답 작성 요령 ]**\n" + chr(173) + "\n"
             quizUIFrame._sub_text += Config.getEmojiFromNumber(1) + "　정답은 공백 없이 입력하여도 상관 없습니다.\n"
             quizUIFrame._sub_text += Config.getEmojiFromNumber(2) + "　특수문자는 입력하지마세요.\n"
-            quizUIFrame._sub_text += Config.getEmojiFromNumber(3) + "　대소문자는 구분할 필요 없습니다..\n"
+            quizUIFrame._sub_text += Config.getEmojiFromNumber(3) + "　대소문자는 구분할 필요 없습니다.\n"
             quizUIFrame._sub_text += Config.getEmojiFromNumber(4) + "　줄임말도 정답으로 인정되긴 하나 정확하지 않습니다.\n"
             quizUIFrame._sub_text += Config.getEmojiFromNumber(5) + "　정답이 영어인 경우에는 발음을 제출해도 정답 인정이 되긴합니다.\n"
             quizUIFrame._sub_text += Config.getEmojiFromNumber(6) + "　여러 시리즈가 있는 경우에는 시리즈명을 포함해야 정답으로 인정됩니다.\n"
@@ -219,7 +219,8 @@ class Quiz:
 
     async def prepare(self): #시작전 전처리
         self.loadQuiz() #퀴즈로드
-        print(self._guild.name+" 에서 " + self._gameName + " 퀴즈 시작")
+        Config.LOGGER.info(self._guild.name+" 에서 " + self._gameName + " 퀴즈 시작")
+        
 
     def sortScore(self):#정렬된 점수 맵 반환
         gameData = self
@@ -256,8 +257,8 @@ class Quiz:
             try:
                 await self.finishGame()  # 게임 끝내기
             except:
-                print("게임 종료 에러, ")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("게임 종료 에러")
+                Config.LOGGER.error(traceback.format_exc())
                 return False
 
             return False
@@ -322,7 +323,7 @@ class Quiz:
                 gameData._thumbnail = quizPath + "/" + file
             elif file.endswith(".wav") or file.endswith(".mp3"):  # 파일 확장자가 .wav 또는 .mp3면, 문제 파일일거임
                 question = file  # 기존 파일명
-                print(f"guild: {guild.name}, gameName: {gameData._gameName}, questionFile: {question}\n") #정답 표시
+                Config.LOGGER.info(f"guild: {guild.name}, gameName: {gameData._gameName}, questionFile: {question}\n") #정답 표시
                 audioName = quizPath + "/" + question #실제 실행할 음악파일 경로
                 audioLength = 39 #오디오 길이
                 
@@ -355,8 +356,8 @@ class Quiz:
                         else:
                             audioLength = length_in_secs
                 except:
-                    print("오디오 열기 에러, "+str(file))
-                    logging.error(traceback.format_exc())
+                    Config.LOGGER.error("오디오 열기 에러, "+str(file))
+                    Config.LOGGER.error(traceback.format_exc())
                     return None
 
                 return audioName, audioLength
@@ -410,7 +411,7 @@ class Quiz:
 
                 if leftTime < 0:
                     leftTime = 0
-                    print("fast end")
+                    Config.LOGGER.debug("fast end")
                     voice.stop()
                     break # 재생시간 초과면 break
         
@@ -504,9 +505,9 @@ class Quiz:
             if not isContinue: #퀴즈 속행 아니면 return
                 return
         except:
-            print("noticeRound error")
+            Config.LOGGER.error("noticeRound error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
 
         roundChecker = gameData._roundIndex  # 현재 라운드 저장
 
@@ -518,9 +519,9 @@ class Quiz:
         try:
             self.parseAnswer()
         except:
-            print("parseAnswer error")
+            Config.LOGGER.error("parseAnswer error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
 
         ###### 라운드 초기화
         
@@ -538,9 +539,9 @@ class Quiz:
         try:
             await self.question()
         except:
-            print("question error")
+            Config.LOGGER.error("question error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
                                         
         ###### 정답 공개
         if self.checkStop(): return
@@ -552,14 +553,14 @@ class Quiz:
                 await self.showAnswer(isWrong=True) #정답 공개
                 await asyncio.sleep(3) #초대기
             except:
-                print("showAnswer error")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("showAnswer error")
+                Config.LOGGER.error(traceback.format_exc())
 
             try:
                 await self.nextRound() #다음 라운드 진행 
             except:
-                print("nextRound error")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("nextRound error")
+                Config.LOGGER.error(traceback.format_exc())
 
 
     def addScore(self, user): #1점 추가
@@ -571,7 +572,8 @@ class Quiz:
 
 
     def checkStop(self): #퀴즈 중지 확인
-        if self._voice == None or not self._voice.is_connected():  # 봇 음성 객체가 없다면 퀴즈 종료
+        channel = discord.utils.get(bot.get_all_channels(), guild__name=str(self._guild.name), name=str(self._chatChannel.name)) #채널 가져오기
+        if channel == None or self._voice == None or not self._voice.is_connected():  # 봇 음성 객체가 없다면 퀴즈 종료, 채널이 None일때도
             guild = self._guild
             if guild in dataMap:
                 dataMap[guild]._gameData = None #퀴즈 데이터 삭제
@@ -581,7 +583,7 @@ class Quiz:
                 try:
                     asyncio.ensure_future(self.forceEnd())
                 except:
-                    logging.error(traceback.format_exc())
+                    Config.LOGGER.error(traceback.format_exc())
 
             return True
 
@@ -590,7 +592,7 @@ class Quiz:
     async def forceEnd(self): #강제 종료시
         if self._gameStep == GAME_STEP.END: return
         self._gameStep = GAME_STEP.END
-        print(str(self._guild.name) + "에서 "+str(self._gameName)+"퀴즈 강제종료")
+        Config.LOGGER.info(str(self._guild.name) + "에서 "+str(self._gameName)+"퀴즈 강제종료")
 
     async def start(self):
         self.init() #초기화
@@ -896,7 +898,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
         for file in os.listdir(quizPath):  # 다운로드 경로 참조, 해당 디렉토리 모든 파일에 대해
             if isImage(file):  # 파일 확장자가 사진 파일이라면
                 question = file  # 기존 파일명
-                print(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {question}\n") #정답 표시
+                Config.LOGGER.info(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {question}\n") #정답 표시
                 if voice and voice.is_connected():  # 해당 길드에서 음성 대화가 이미 연결된 상태라면 (즉, 누군가 퀴즈 중)
                     gameData._gameStep = GAME_STEP.WAIT_FOR_ANSWER
                     roundChecker = gameData._roundIndex  # 현재 라운드 저장
@@ -1040,7 +1042,7 @@ class OXQuiz(Quiz): #OX 퀴즈
         quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_QUIZ_DEFAULT + "　**문제**\n" + chr(173) + "\n"
         quizUIFrame._notice_text += questionText + "\n"
 
-        print(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {gameData._nowQuiz}\n") #정답 표시
+        Config.LOGGER.info(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {gameData._nowQuiz}\n") #정답 표시
 
         playBGM(voice, BGM_TYPE.BELL)
 
@@ -1389,7 +1391,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
         quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_QUIZ_DEFAULT + "　**문제**\n" + chr(173) + "\n"
         quizUIFrame._notice_text += questionText + "\n"
 
-        print(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {gameData._nowQuiz}\n") #정답 표시
+        Config.LOGGER.info(f"guild: {gameData._guild.name}, gameName: {gameData._gameName}, questionFile: {gameData._nowQuiz}\n") #정답 표시
 
         playBGM(voice, BGM_TYPE.BELL)
         await quizUIFrame.update()
@@ -1476,8 +1478,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     if syncMessage == None:
                         syncMessage = await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 동기화 중... 잠시만 기다려주세요.\n"+chr(173)+" ```")
         except:
-            print("동기화 에러")
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("동기화 에러")
+            Config.LOGGER.error(traceback.format_exc())
             return False
 
         if isSyncRound:
@@ -1491,8 +1493,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             if syncMessage != None:
                 await syncMessage.delete() #동기화 메시지 삭제     
         except:
-            print("동기 메시지 삭제 에러")
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("동기 메시지 삭제 에러")
+            Config.LOGGER.error(traceback.format_exc())
 
         await asyncio.sleep(1) #상대도 동기할 수 있도록 1초 대기
         return True
@@ -1541,7 +1543,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 if(os.path.isdir(abPath)):  # 폴더인지 확인(폴더만 추출할거임)
                     quizList.append(abPath) #퀴즈 목록에 추가, 절대 경로를 추가함
 
-        print(str(len(quizList)) + "개")
+        Config.LOGGER.debug(str(len(quizList)) + "개")
         for i in range(0, 50): #50문제만 뽑을거임
             rd = random.randint(0, len(quizList) - 1)  # 0부터 tmpList 크기 -1 만큼
             quiz = quizList[rd]  # 무작위 1개 선택
@@ -1632,7 +1634,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 question = file  # 기존 파일명
                 audioName = quizPath + "/" + question #실제 실행할 음악파일 경로
                 audioLength = 39 #오디오 길이
-                print(f"guild: {gameData._guild.name}, target: {gameData._targetData._guild.name}, gameName: {gameData._gameName}, questionFile: {audioName}\n") #정답 표시
+                Config.LOGGER.info(f"guild: {gameData._guild.name}, target: {gameData._targetData._guild.name}, gameName: {gameData._gameName}, questionFile: {audioName}\n") #정답 표시
                 try:
                     if file.endswith(".wav"): #확장자 wav 일때
                         f = sf.SoundFile(audioName) #오디오 파일 로드
@@ -1662,8 +1664,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                         else:
                             audioLength = length_in_secs
                 except:
-                    print("오디오 열기 에러, "+str(file))
-                    logging.error(traceback.format_exc())
+                    Config.LOGGER.error("오디오 열기 에러, "+str(file))
+                    Config.LOGGER.error(traceback.format_exc())
                     return None
 
                 return audioName, audioLength
@@ -1701,8 +1703,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 if syncMessage != None:
                     await syncMessage.delete() #동기화 메시지 삭제     
             except:
-                print("동기 메시지 삭제 에러")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("동기 메시지 삭제 에러")
+                Config.LOGGER.error(traceback.format_exc())
         
         if self._audioData == None or self._audioData != targetData._audioData: #동기 실패시
             return False
@@ -1742,7 +1744,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     try:
                         self._voice = await voiceChannel.connect()
                     except:
-                        print("voice reconnect error")
+                        Config.LOGGER.error("voice reconnect error")
                 voice = self._voice
             
             await asyncio.sleep(2)
@@ -1792,7 +1794,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
                 if leftTime < 0:
                     leftTime = 0
-                    print("fast end")
+                    Config.LOGGER.error("fast end")
                     voice.stop()
                     break # 재생시간 초과면 break
         
@@ -1826,9 +1828,9 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             if not isContinue: #퀴즈 속행 아니면 return
                 return
         except:
-            print("noticeRound error")
+            Config.LOGGER.error("noticeRound error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
 
         roundChecker = gameData._roundIndex  # 현재 라운드 저장
 
@@ -1839,9 +1841,9 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         try:
             self.parseAnswer()
         except:
-            print("parseAnswer error")
+            Config.LOGGER.error("parseAnswer error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
 
         ###### 라운드 초기화
         
@@ -1866,9 +1868,9 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
             await self.question()
         except:
-            print("question error")
+            Config.LOGGER.error("question error")
             isError = True
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
 
                                         
         ###### 정답 공개
@@ -1883,14 +1885,14 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 await self.showAnswer(isWrong=True) #정답 공개
                 await asyncio.sleep(3)
             except:
-                print("showAnswer error")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("showAnswer error")
+                Config.LOGGER.error(traceback.format_exc())
 
             try:
                 await self.nextRound() #다음 라운드 진행 
             except:
-                print("nextRound error")
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error("nextRound error")
+                Config.LOGGER.error(traceback.format_exc())
 
 
 
@@ -1959,8 +1961,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 try:
                     await syncMessage.delete() #동기화 메시지 삭제     
                 except:
-                    print("동기 메시지 삭제 에러")
-                    logging.error(traceback.format_exc())
+                    Config.LOGGER.error("동기 메시지 삭제 에러")
+                    Config.LOGGER.error(traceback.format_exc())
                 continue
 
             i += 1
@@ -2000,8 +2002,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         try:
             await syncMessage.delete() #동기화 메시지 삭제     
         except:
-            print("동기 메시지 삭제 에러")
-            logging.error(traceback.format_exc())
+            Config.LOGGER.error("동기 메시지 삭제 에러")
+            Config.LOGGER.error(traceback.format_exc())
 
 
         self._maxRound = len(self._quizList)  # 문제 총 개수
@@ -2206,7 +2208,6 @@ bot = commands.Bot(command_prefix=Config.BOT_PREFIX)  # 봇 커맨드 설정
 #Utility
 async def fadeIn(voice):
     if not voice.is_playing(): #보이스 재생중아니면
-        print("t")
         return # 즉각 리턴
 
     try:
@@ -2218,8 +2219,8 @@ async def fadeIn(voice):
             voice.source.volume = volume  # 볼륨 설정
             await asyncio.sleep(0.10)   
     except:
-        print("fade In error")
-        logging.error(traceback.format_exc())
+        Config.LOGGER.error("fade In error")
+        Config.LOGGER.error(traceback.format_exc())
 
 
 
@@ -2236,8 +2237,8 @@ async def fadeOut(voice):
         
         voice.stop()  # 노래 중지
     except:
-        print("fade out error")
-        logging.error(traceback.format_exc())
+        Config.LOGGER.error("fade out error")
+        Config.LOGGER.error(traceback.format_exc())
 
 
 async def clearAll(chatChannel):
@@ -2349,8 +2350,8 @@ def playBGM(voice, bgmType): #BGM 틀기
 
         voice.play(source)
     except:
-        print("error01 - voice is not connect error")
-        logging.error(traceback.format_exc())
+        Config.LOGGER.error("error01 - voice is not connect error")
+        Config.LOGGER.error(traceback.format_exc())
 
 
 def getQuizTypeFromIcon(icon): #아이콘으로 퀴즈 타입 추측
@@ -2479,12 +2480,12 @@ async def test(ctx): #비동기 함수 한번에 여러개 실행방법
 
 async def test2(ctx):
     while True:
-        print("텟1")
+        Config.LOGGER.debug("텟1")
         await asyncio.sleep(1)
 
 async def test3(ctx):
     while True:
-        print("텟2")
+        Config.LOGGER.debug("텟2")
         await asyncio.sleep(1)
 
 async def test4(ctx): #비동기 함수 실행하고 잊기 fire and forget
@@ -2531,7 +2532,7 @@ async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 �
             notice += line
         f.close()
     except:
-        print("공지사항 로드 에러")
+        Config.LOGGER.error("공지사항 로드 에러")
 
     if notice != "":#공지가 있다면
         await channel.send("```"+ chr(173) + "\n" +str(notice) +"\n"+ chr(173) + "\n"+"```")
@@ -2542,14 +2543,14 @@ async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 �
 # 봇이 접속(활성화)하면 아래의 함수를 실행하게 된다, 이벤트
 @bot.event
 async def on_ready():
-    print(f'{bot.user} 활성화됨')
+    Config.LOGGER.info(f'{bot.user} 활성화됨')
     await bot.change_presence(status=discord.Status.online) #온라인
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
   
-    print("봇 이름:",bot.user.name,"봇 아이디:",bot.user.id,"봇 버전:",discord.__version__)
+    Config.LOGGER.info("봇 이름:" + str(bot.user.name) + ", 봇 아이디:" + str(bot.user.name) + ", 봇 버전:" + discord.__version__)
     # for guild in bot.guilds:
     #     print(guild.name)
-    print(str(len(bot.guilds)) + "개의 서버 연결됨")
+    Config.LOGGER.info(str(len(bot.guilds)) + "개의 서버 연결됨")
 
 
 @bot.command(pass_context=False, aliases=["ping"])  # ping 명령어 입력시
@@ -2689,7 +2690,7 @@ async def on_reaction_add(reaction, user):
             except:
                 await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
                 await channel.send(Config.BOT_LINK)
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error(traceback.format_exc())
                 return
         await ui.on_reaction_add(reaction, user) #이벤트 동작
 
@@ -2701,7 +2702,7 @@ async def on_reaction_add(reaction, user):
             except:
                 await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
                 await channel.send(Config.BOT_LINK)
-                logging.error(traceback.format_exc())
+                Config.LOGGER.error(traceback.format_exc())
                 return
         await gameData.action(reaction, user) #이벤트 동작
 
@@ -2742,4 +2743,6 @@ async def on_command_error(ctx, error):
 #################################
 
 ui.initializing(bot, startQuiz) #QuizSelector 초기화
+#한국 봇 서버 업데이트
+koreaBot = koreanbots.Client(bot, Config.KOREA_BOT_TOKEN)
 bot.run(Config.TOKEN)  # 봇 실행
