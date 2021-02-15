@@ -17,6 +17,7 @@ from shutil import copyfile
 import sys, traceback
 import logging
 import datetime
+from discord.ext.commands import CommandNotFound
 
 logging.basicConfig(level=logging.ERROR) #로깅 설정
 random.seed() #시드 설정
@@ -2729,6 +2730,13 @@ async def on_reaction_remove(reaction, user):
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
         await reaction.message.add_reaction(emoji=emoji) #다시 추가
                 
+
+#커맨드 에러 핸들링
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
 
 
 #################################
