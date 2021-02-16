@@ -810,6 +810,9 @@ class Quiz:
 
         if self._gameStep == GAME_STEP.END: return
 
+
+        self._roundIndex = self._maxRound
+
         quizUIFrame = self._quizUIFrame
 
         quizUIFrame._title_visible = True
@@ -2505,7 +2508,7 @@ async def test4(ctx): #비동기 함수 실행하고 잊기 fire and forget
 
 async def helpMessage(ctx): #도움말
         sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.\n"
+        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.　, (!ㅋㅈ, !quiz, !QUIZ 도 가능)\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !중지 - 퀴즈를 강제로 중지합니다.\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !현황 - 퀴즈별 진행중인 서버수를 확인합니다.\n"
         sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
@@ -2641,7 +2644,7 @@ async def multiplayVoiceSyncCommand(ctx):  # 멀티플레이 채팅
     if gameData._gameType == GAME_TYPE.MULTIPLAY: #멀티 플레이 게임중이면
         await gameData.toggleVoiceSync()
 
-@bot.command(pass_context=False, aliases=["quiz", "QUIZ", "퀴즈"])  # quiz 명령어 입력시
+@bot.command(pass_context=False, aliases=["quiz", "QUIZ", "퀴즈", "ㅋㅈ"])  # quiz 명령어 입력시
 async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
     if gamesrc == None:
         guild = ctx.guild #서버
@@ -2706,8 +2709,12 @@ async def on_reaction_add(reaction, user):
         return  # 건너뛰어
 
     channel = reaction.message.channel  # 반응 추가한 채널
+    message = reaction.message
     guildData = getGuildData(reaction.message.guild)
     gameData = guildData._gameData
+
+    if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
+        return
 
     isAlreadyRemove = False
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
@@ -2753,11 +2760,15 @@ async def on_reaction_remove(reaction, user):
         return #건너뛰어
 
     channel = reaction.message.channel  # 반응 삭제한 채널
+    message = reaction.message
     emoji = reaction.emoji
     guildData = getGuildData(reaction.message.guild)
 
+    if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
+        return
+
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
-        await reaction.message.add_reaction(emoji=emoji) #다시 추가
+            await reaction.message.add_reaction(emoji=emoji) #다시 추가
                 
 
 #커맨드 에러 핸들링

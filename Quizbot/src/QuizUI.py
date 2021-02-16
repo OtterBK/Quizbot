@@ -2266,6 +2266,9 @@ async def on_reaction_add(reaction, user):
     if not guild.id in selectorMap.keys(): #데이터 없다면
         return
 
+    if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
+        return
+
     selectorData = selectorMap[guild.id]
     if len(selectorData._frameStack) <= 0: #프레임 스택이 비어있다면
         selectorData._frameStack.append(MainFrame()) #메인 화면 프레임 추가
