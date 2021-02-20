@@ -1,0 +1,4 @@
+&topNickname: 역사가
+&quizCount: 50
+&typeName: 단답형 역사 문제 맞추기
+한국사의 문제를 보고 정답을 맞추셔야합니다.

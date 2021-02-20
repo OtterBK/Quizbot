@@ -1,0 +1,4 @@
+&topNickname: 상식인
+&quizCount: 50
+&typeName: OX 퀴즈
+일반 상식 OX 퀴즈입니다.

@@ -1,0 +1,11 @@
+&topNickname: 겜돌이 서버
+&typeName: 게임 제목 맞추기(주관식)
+&pathList
+게임&icon=🕹️\게임1&quiz&icon=🎧
+&endPathList
+
+게임 퀴즈 중, 무작위로 50개가 선정돼 퀴즈가 진행됩니다.
+
+🔔 힌트 : 사용불가
+⏩ 스킵 : 사용불가
+🔈 문제별 노래길이 : 30초

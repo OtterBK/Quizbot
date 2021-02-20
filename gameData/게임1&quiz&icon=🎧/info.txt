@@ -1,3 +1,0 @@
-&topNickname: 게임중독
-&typeName: 게임 제목 맞추기(주관식)
-OST듣고 추억의 게임 제목 맞추기!
