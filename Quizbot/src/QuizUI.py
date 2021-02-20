@@ -690,6 +690,8 @@ class QuizInfoFrame(QFrame):
         self._quizRepeatCnt = 1 #소리 반복 횟수 기본 1
         self._quizTopNickname = "" #1등 별명
 
+        self._started = False
+
         self.loadQuizInfo()
     
     def loadQuizInfo(self): #퀴즈 정보 로드
@@ -762,7 +764,9 @@ class QuizInfoFrame(QFrame):
         number = Config.getNumberFromEmoji(emoji) #이모지에 대응하는 정수값 가져옴
         if number != -1: #숫자 이모지라면
             if number == 1: #1번은 퀴즈 시작
-                await fun_startQuiz(self, user)
+                if not self._started:
+                    self._started = True
+                    await fun_startQuiz(self, user)
             elif number == 2: #2번은 순위 확인
                 scoreboard = getScoreboard(guild.id, self._quizName)
                 await showFrame(message, ScoreboardFrame(scoreboard), isPopUp=True) #순위 확인창 표시
@@ -1318,7 +1322,9 @@ class MultiplayInfoFrame(QFrame):
 
     async def update(self): #새로고침
         try:
-            await showFrame(self._myMessage, self, isPopUp=False)
+            isSuc = await showFrame(self._myMessage, self, isPopUp=False)
+            if not isSuc:
+                self._stopFlag =True
         except:
             self._stopFlag = True
             Config.LOGGER.error("매칭 메시지 에러 발생")
@@ -1344,7 +1350,16 @@ class MultiplayInfoFrame(QFrame):
         Config.LOGGER.info("매칭 탐색 시작 "+ str(self._quizName) +", " + str(self._myMessage.guild.name))
         self._stopFlag = False
         voiceChannel = owner.voice.channel  # 호출자의 음성 채널 얻기
-        voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+
+        voice = get(bot.voice_clients, guild=self._myMessage.channel.guild)
+        if voice == None or voice.is_connected():
+            voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+
+        if voice == None: 
+            self._notice_text = Config.EMOJI_ICON.ICON_WARN + " 음성 객체를 가져오는데 실패했습니다.."
+            await self.update()
+            return
+
         voice.play(discord.FFmpegPCMAudio(Config.BGM_PATH + "MATCHING.mp3"))
 
         if not self._quizName in matchingCategory.keys(): #해당 퀴즈에 대해 생성된 매칭큐가 없다면
@@ -1367,12 +1382,11 @@ class MultiplayInfoFrame(QFrame):
                     await voice.disconnect()
                 try:
                     self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + "　" + self._quizName +" 카테고리를 매칭중인 서버 **" + str(len(matchingQueue)) + "개**"
-                    await self.update()
+                    #await self.update()
                 except:
                     Config.LOGGER.error("매칭 취소 메시지 표시 에러")
 
                 return
-
 
             if len(selectorData._frameStack) > 0:# 프레임 존재시
                 topFrame = selectorData._frameStack[len(selectorData._frameStack) - 1] #최상위 프레임 가져옴
@@ -1977,6 +1991,8 @@ def isQuiz(fileName): #퀴즈 폴더인지 확인
         return False
 
 def getClockIcon(leftTime, maxTime): #시계 아이콘 반환
+    if maxTime == 0: 
+        return Config.EMOJI_ICON_CLOCK_0
     clockType = int((maxTime-leftTime)/maxTime * 12)
     if clockType == 0:
         return Config.EMOJI_ICON.CLOCK_0
@@ -2113,28 +2129,31 @@ async def showTop(message, selectorData):
 async def showFrame(message, frame, isPopUp=True): #프레임 표시, isPopUp 가 True면 프레임을 추가로 띄우는 방식으로
     guildID = message.guild.id
     if not guildID in selectorMap.keys(): #등록된 selector데이터가 없다면
-        return
+        return False
 
     selectorData = selectorMap[guildID]
 
-    await setFrame(message, frame)
+    isSuc = await setFrame(message, frame)
     if isPopUp: #팝업 방식이면
         selectorData._frameStack.append(frame) #프레임 스택에 추가
+    return isSuc
 
 
 async def setFrame(message, frame): #메시지에 해당 프레임을 설정
-    if not isSet: return
+    if not isSet: return False
 
     if message == None or frame == None:
-        return
+        return False
 
     frame.paint(message) #프레임 표시 이벤트
     selectorEmbed = getEmbedFromFrame(frame) 
 
     try:
         await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+        return True
     except:
         Config.LOGGER.warning(traceback.format_exc())
+        return False
 
 
 async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성

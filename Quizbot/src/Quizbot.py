@@ -383,6 +383,8 @@ class Quiz:
 
         hintType = gameData._quizUIFrame._option._hintType # 힌트 타입 가져오기
             
+        
+        limit = 0
 
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
@@ -406,7 +408,8 @@ class Quiz:
                     if playTime > audioLength // 2: #절반 이상 재생됐다면
                         await self.requestHint() #힌트 요청
 
-
+                limit += 1
+                if limit > 1000: return
                 await quizUIFrame.update()
 
                 if leftTime < 0:
@@ -810,7 +813,6 @@ class Quiz:
 
         if self._gameStep == GAME_STEP.END: return
 
-
         self._roundIndex = self._maxRound
 
         quizUIFrame = self._quizUIFrame
@@ -1194,6 +1196,8 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         hintType = gameData._quizUIFrame._option._hintType # 힌트 타입 가져오기
             
 
+        limit = 0
+
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
             
@@ -1212,6 +1216,9 @@ class IntroQuiz(Quiz): #인트로 퀴즈
 
                 if leftTime < 0:
                     leftTime = 0
+
+                limit += 1
+                if limit > 1000: return
 
                 await quizUIFrame.update()
 
@@ -1780,6 +1787,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     await self.connectionTimeout()
                     break
 
+            limit = 0
+
             
             voice.play(source)  # 노래 재생
             await fadeIn(voice) #페이드인
@@ -1798,6 +1807,8 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     if playTime > audioLength // 2: #절반 이상 재생됐다면
                         await self.requestHint() #힌트 요청
 
+                limit += 1
+                if limit > 1000: return
 
                 await quizUIFrame.update()
 
@@ -2274,12 +2285,15 @@ async def countdown(gameData, isLong=False): #카운트 다운
     volume = 1.0 # 초기볼륨
     voice.source.volume = volume
     
+    limit = 0
     while voice.is_playing():  # 카운트다운중이면
         if(roundChecker != gameData._roundIndex): #이미 다음 라운드 넘어갔으면
             voice.stop() #카운트다운 정지
             return #리턴
         await asyncio.sleep(1)  # 1초후 다시 확인
 
+        limit += 1
+        if limit > 100: return
         leftSec -= 1 #남은 초 -1
         if leftSec < 0: leftSec = 0
         quizUIFrame._quizLeftTime = leftSec
@@ -2427,6 +2441,9 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
     voice = get(bot.voice_clients, guild=guild)
     if voice == None or not voice.is_connected():  # 음성 연결 안됐다면
         voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+
+    quizInfoFrame._started = False
+
     playBGM(voice, BGM_TYPE.BELL)
 
     # 해당 채팅 채널에 선택한 퀴즈에 대한 퀴즈 진행용 UI 생성
@@ -2654,6 +2671,11 @@ async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
             asyncio.ensure_future(showNotice(ctx.message.channel))
         except:
             pass
+
+        if guildData._gameData == None:
+            voice = get(bot.voice_clients, guild=ctx.guild)
+            if voice and voice.is_connected():  # 음성대화 연결된 상태면
+                await voice.disconnect() #끊기
 
         await ui.createSelectorUI(ctx.channel) #UI 재설정
         guildData._selectorChannelID = ctx.channel.id #버튼 상호작용 채널 설정
