@@ -1,0 +1,2 @@
+여기에 공지 사항을 작성하세요
+savedata/notice1.txt
