@@ -133,8 +133,8 @@ LAST_PATCH = "21/02/18" #마지막 패치일
 EMAIL_ADDRESS = "otter6975@gmail.com" #연락용 이메일
 BOT_LINK = "https://koreanbots.dev/bots/788060831660114012" #봇 공유용 링크
 
-TOKEN = ""
-KOREA_BOT_TOKEN = ""
+TOKEN = "" #봇의 토큰
+KOREA_BOT_TOKEN = "" #한국 봇 서버 토큰, 필수아님
 
 ```
 #### 👩‍💻 해당 값을 자신의 환경에 맞게 변경하셔야합니다. :memo:
