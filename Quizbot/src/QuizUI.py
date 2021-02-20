@@ -900,9 +900,8 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         self._quizDesc = infoText
 
     async def update(self): #새로고침
-        try:
-            await showFrame(self._myMessage, self, isPopUp=False)
-        except:
+        isSuc = await showFrame(self._myMessage, self, isPopUp=False)
+        if not isSuc:
             Config.LOGGER.error("퀴즈 UI 업데이트 에러, UI 재생성")
             Config.LOGGER.error(traceback.format_exc())
             quizUIEmbed = discord.Embed(title="UI 재생성 중...", url=None, description="잠시만 기다려주세요.\n", color=discord.Color.blue())

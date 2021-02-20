@@ -2735,8 +2735,8 @@ async def on_reaction_add(reaction, user):
     guildData = getGuildData(reaction.message.guild)
     gameData = guildData._gameData
 
-    if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
-        return
+    # if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
+    #     return
 
     isAlreadyRemove = False
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
@@ -2786,8 +2786,8 @@ async def on_reaction_remove(reaction, user):
     emoji = reaction.emoji
     guildData = getGuildData(reaction.message.guild)
 
-    if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
-        return
+    # if message.author != None and message.author != bot.user: #봇이 보낸 메시지가 아니면
+    #     return
 
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
             await reaction.message.add_reaction(emoji=emoji) #다시 추가
