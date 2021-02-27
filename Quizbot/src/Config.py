@@ -6,7 +6,7 @@ import logging
 
 BOT_PREFIX = "!" #명령어 prefix
 
-RESOURCE_PATH = "F:/quizbot/"
+RESOURCE_PATH = "/home/ubuntu/quizbot/resource/"
 QUIZ_PATH = RESOURCE_PATH + "gameData/"  # 게임 소스폴더
 MULTI_PATH = RESOURCE_PATH + "multiplay/"  # 멀티플레이 소스폴더
 BGM_PATH = RESOURCE_PATH + "bgm/"  # 효과음 폴더
@@ -30,19 +30,21 @@ SYNC_INTERVAL = 0.01 #동기 체크 딜레이
 MAX_CONNECTION = 30
 
 
-try:
-    f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
-    TOKEN = f.readline().strip()
-    f.close()
-except:
-    print("토큰 로드 에러")
+if TOKEN == "":
+    try:
+        f = open(DATA_PATH+"token.txt", 'r', encoding="utf-8" )
+        TOKEN = f.readline().strip()
+        f.close()
+    except:
+        print("토큰 로드 에러")
 
-try:
-    f = open(DATA_PATH+"korea_bot_token.txt", 'r', encoding="utf-8" )
-    KOREA_BOT_TOKEN = f.readline().strip()
-    f.close()
-except:
-    print("토큰 로드 에러")
+if KOREA_BOT_TOKEN == "":
+    try:
+        f = open(DATA_PATH+"korea_bot_token.txt", 'r', encoding="utf-8" )
+        KOREA_BOT_TOKEN = f.readline().strip()
+        f.close()
+    except:
+        print("토큰 로드 에러")
 
 #이모지 아이콘
 class EMOJI_ICON(enumerate): #이모지
