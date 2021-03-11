@@ -46,7 +46,8 @@ class GAME_TYPE(enumerate):
     QNA = 8 #텍스트 기반 qna
     FAST_QNA = 9 #텍스트 기반 qna, 타이머 짧음
     INTRO = 10 #인트로 맞추기
-    MULTIPLAY = 11 #멀티플레일
+    MULTIPLAY = 11 #멀티플레이
+    PICTURE_LONG = 12 #타이머 긴 사진 퀴즈
 
 
 class BGM_TYPE(enumerate):
@@ -78,7 +79,7 @@ class GuildData: #봇이 있는 디스코드 서버 데이터
         self._gameData = None #진행중인 퀴즈 데이터
 
 
-class TextQuizData: 
+class TextQuizData:
     def __init__(self, answer):
         self._answer = answer
         self._questionText = ""
@@ -142,7 +143,7 @@ class Quiz:
         quizUIFrame._sub_visible = True
         quizUIFrame._main_visible = False
         quizUIFrame._notice_visible = False
-        quizUIFrame._customFooter_visible = False   
+        quizUIFrame._customFooter_visible = False
 
         quizUIFrame._path_visible = False
         quizUIFrame._page_visible = False
@@ -220,7 +221,7 @@ class Quiz:
     async def prepare(self): #시작전 전처리
         self.loadQuiz() #퀴즈로드
         Config.LOGGER.info(self._guild.name+" 에서 " + self._gameName + " 퀴즈 시작")
-        
+
 
     def sortScore(self):#정렬된 점수 맵 반환
         gameData = self
@@ -264,7 +265,7 @@ class Quiz:
             return False
 
         voice = get(bot.voice_clients, guild=uiMessage.guild)  # 봇의 음성 객체 얻기
-        
+
         # quizUIFrame._field_visible = True
         # for player in self.sortScore(): #점수판 추가
         #     playerName = player.display_name
@@ -326,14 +327,14 @@ class Quiz:
                 Config.LOGGER.info(f"guild: {guild.name}, gameName: {gameData._gameName}, questionFile: {question}\n") #정답 표시
                 audioName = quizPath + "/" + question #실제 실행할 음악파일 경로
                 audioLength = 39 #오디오 길이
-                
+
                 try:
                     if file.endswith(".wav"): #확장자 wav 일때
                         f = sf.SoundFile(audioName) #오디오 파일 로드
                         audioLength = len(f) / f.samplerate #오디오 길이
                         f.close()
                     elif file.endswith(".mp3"): #확장자 mp3일때
-                        audio = MP3(audioName) 
+                        audio = MP3(audioName)
                         audio_info = audio.info
                         length_in_secs = int(audio_info.length) #음악 총 길이
                         if length_in_secs > gameData._trimLength + 1: #음악이 자를 시간 초과할 시, 자르기 시작
@@ -349,7 +350,7 @@ class Quiz:
                             endTime *= 1000 #s를 ms로
 
                             extract = song[startTime:endTime] #노래 자르기
-                            audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경 
+                            audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경
 
                             extract.export(audioName) #임시 저장
                             audioLength = gameData._trimLength
@@ -382,13 +383,13 @@ class Quiz:
         quizUIFrame._useFormat = True #정해진 포맷 사용
 
         hintType = gameData._quizUIFrame._option._hintType # 힌트 타입 가져오기
-            
-        
+
+
         limit = 0
 
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
-            
+
             voice.stop() #우선 보이스 중지
 
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
@@ -403,7 +404,7 @@ class Quiz:
                 playTime += 1 #재생 1초 +
                 leftTime = audioLength  - playTime #남은 길이
                 quizUIFrame._quizLeftTime = leftTime
-                
+
                 if hintType == 2: #힌트 타입이 자동일 떄
                     if playTime > audioLength // 2: #절반 이상 재생됐다면
                         await self.requestHint() #힌트 요청
@@ -417,7 +418,7 @@ class Quiz:
                     Config.LOGGER.debug("fast end")
                     voice.stop()
                     break # 재생시간 초과면 break
-        
+
         return True
 
     def setScoreField(self, uiFrame):
@@ -452,7 +453,7 @@ class Quiz:
         answerFrame._sub_text = ""
 
         answerFrame._title_visible = True
-        if isWrong: #오답일 시 
+        if isWrong: #오답일 시
             if not voice.is_playing():
                 playBGM(voice, BGM_TYPE.FAIL)
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.getRandomWrongIcon() +" 정답 공개　　　　]"
@@ -469,14 +470,14 @@ class Quiz:
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
 
         answerFrame._main_visible = False
-        
+
         if author != "": #추가 설명이 있다면
             answerFrame._notice_visible = True
             answerFrame._notice_text = Config.EMOJI_ICON.ICON_PEN + " *" + author + "*"
         else:
             answerFrame._notice_visible = False
 
-    
+
 
         answerFrame._field_visible = True
         self.setScoreField(answerFrame)
@@ -486,7 +487,7 @@ class Quiz:
             answerFrame._image_local = True
             answerFrame._image_url = gameData._thumbnail
 
-            
+
         answerFrame._page_visible = False
         answerFrame._path_visible = False
 
@@ -527,7 +528,7 @@ class Quiz:
             Config.LOGGER.error(traceback.format_exc())
 
         ###### 라운드 초기화
-        
+
         gameData._isSkiped = False
         gameData._useHint = False
         gameData._thumbnail = None # 썸네일 초기화
@@ -545,7 +546,7 @@ class Quiz:
             Config.LOGGER.error("question error")
             isError = True
             Config.LOGGER.error(traceback.format_exc())
-                                        
+
         ###### 정답 공개
         if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
@@ -560,7 +561,7 @@ class Quiz:
                 Config.LOGGER.error(traceback.format_exc())
 
             try:
-                await self.nextRound() #다음 라운드 진행 
+                await self.nextRound() #다음 라운드 진행
             except:
                 Config.LOGGER.error("nextRound error")
                 Config.LOGGER.error(traceback.format_exc())
@@ -641,7 +642,7 @@ class Quiz:
             await asyncio.sleep(1)  # 1초 대기
             if waitCount <= 0: #9초 대기했다면
                 break #대기 탈출
-        
+
         if roundChecker != self._roundIndex:  # 이미 다음 라운드라면 리턴
             return
         await fadeOut(voice)
@@ -655,7 +656,7 @@ class Quiz:
         gameData._gameStep = GAME_STEP.END
         voice.stop()
 
-        quizUIFrame._useFormat = False 
+        quizUIFrame._useFormat = False
 
         quizUIFrame._title_visible = True
         quizUIFrame._title_text = chr(173)+"[　　　　"+ Config.getMedalFromNumber(0) + " " + "순위 발표" + "　　　　]"
@@ -691,15 +692,15 @@ class Quiz:
                 quizUIFrame._notice_text += str(Config.getMedalFromNumber(i)) + " " + playerName + "　"+ chr(173) + "　" + str(gameData._scoreMap[player]) + "점　" + chr(173)
 
                 if i == 1: #1등이면
-                    quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_POINT_TO_LEFT + "　**최고의 " + str(self._topNickname) + "**\n" 
+                    quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_POINT_TO_LEFT + "　**최고의 " + str(self._topNickname) + "**\n"
 
-                quizUIFrame._notice_text += chr(173) + "\n" 
+                quizUIFrame._notice_text += chr(173) + "\n"
 
                 if i <= 3: #3등까지는 한 개씩 보여줌
                     playBGM(voice, BGM_TYPE.SCORE_ALARM)
                     await quizUIFrame.update()
                     await asyncio.sleep(2)
-                
+
                 i += 1
 
             if len(gameData._scoreMap) > 3: #4명이상 플레이 했다면
@@ -708,7 +709,7 @@ class Quiz:
 
             scoreboard = ui.getScoreboard(self._guild.id, self._gameName)  #길드, 퀴즈명으로 순위표  가져오기
             scoreboard.mergeScore(gameData._scoreMap) #현재 한 퀴즈 결과에 대한 순위표와 병합
-        
+
 
         await asyncio.sleep(4)
 
@@ -722,7 +723,7 @@ class Quiz:
         self.checkStop() #데이터 삭제
 
     async def requestHint(self): #힌트 사용
-        
+
         gameData = self #게임 데이터 불러올거임
 
         if gameData._gameStep != GAME_STEP.WAIT_FOR_ANSWER: #정답자 대기중이 아니면
@@ -758,7 +759,7 @@ class Quiz:
                 hintIndex.append(rd)
                 index += 1
 
-        index = 0 
+        index = 0
         while index < answerLen:
             if index in hintIndex: #만약 해당 글자가 표시인덱스에 있다면
                 hintStr += answer[index] #해당 글자는 표시하기
@@ -792,7 +793,7 @@ class Quiz:
             voice = gameData._voice
             roundChecker = gameData._roundIndex  # 스킵한 라운드 저장
             voice.source = discord.PCMVolumeTransformer(voice.source)
-                    
+
             waitCount = 3 #3초 대기할거임
             while voice.is_playing(): #재생중이면
                 waitCount -= 1
@@ -804,9 +805,9 @@ class Quiz:
                 await fadeOut(voice)
                 await self.showAnswer(isWrong=True) #정답 공개
                 await asyncio.sleep(3)
-                if roundChecker == gameData._roundIndex: 
-                    await self.nextRound() #다음 라운드 진행 
-        
+                if roundChecker == gameData._roundIndex:
+                    await self.nextRound() #다음 라운드 진행
+
 
     async def stop(self): #퀴즈 중지
         await self._voice.disconnect()
@@ -841,7 +842,7 @@ class Quiz:
         await quizUIFrame.update()
 
         self.checkStop()
-        
+
 
     async def onAnswer(self, author, isWrong=False):
         gameData = self
@@ -860,7 +861,7 @@ class Quiz:
             await self.nextRound() #다음 라운드로 진행
 
     ##이벤트
-    async def action(self, reaction, user): 
+    async def action(self, reaction, user):
         emoji = reaction.emoji
         message = reaction.message
         guild = message.guild
@@ -868,11 +869,11 @@ class Quiz:
     async def on_message(self, message):
         gameData = self
         author = message.author
-        
+
         if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER: #정답자 대기중이면
             inputAnswer = message.content.replace(" ", "").upper() #공백 제거 및 대문자로 변경
             isAnswer = False
-            for answer in gameData._answerList: #정답 목록과 비교 
+            for answer in gameData._answerList: #정답 목록과 비교
                 answer = answer.replace(" ", "").upper() # 공백 제거 및 대문자로 변경
                 if answer == inputAnswer:  # 정답과 입력값 비교 후 일치한다면
                     isAnswer = True
@@ -884,7 +885,7 @@ class Quiz:
                 self.addScore(author)  # 메세지 보낸사람 1점 획득
 
                 asyncio.ensure_future(self.onAnswer(author))
-                
+
 
 class SongQuiz(Quiz): #노래 퀴즈
 
@@ -895,6 +896,8 @@ class PictureQuiz(Quiz): #그림 퀴즈
 
     def __init__(self, quizPath, quizUIFrame, voice, owner):
         super().__init__(quizPath, quizUIFrame, voice, owner) #
+
+        self._isLongCount = False #긴 타이머인지
 
     async def question(self): #문제 내기
         gameData = self
@@ -924,7 +927,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
                         return
                     if hintType == 2: #힌트 타입이 자동일 떄
                         await self.requestHint() #힌트 요청
-                    await countdown(gameData, isLong=False)  #카운트 다운
+                    await countdown(gameData, self._isLongCount)  #카운트 다운
 
     async def performance(self, user):
         voice = self._voice
@@ -956,7 +959,7 @@ class PictureQuiz(Quiz): #그림 퀴즈
         await quizUIFrame.update()
 
         await asyncio.sleep(2)  # 2초 대기
-        
+
 class OXQuiz(Quiz): #OX 퀴즈
 
     def __init__(self, quizPath, quizUIFrame, voice, owner):
@@ -996,7 +999,7 @@ class OXQuiz(Quiz): #OX 퀴즈
                     else: #desc도 없다면, 문제 문장일거임
                         if(tmpOXQuiz != None): # 작업중인 ox 문제 객체가 있다면
                             tmpOXQuiz._questionText += line # line 추가
-                
+
             f.close()
 
             quizList = []  # 빈 리스트 선언
@@ -1028,14 +1031,14 @@ class OXQuiz(Quiz): #OX 퀴즈
         oxQuiz = gameData._textQuizList[gameData._roundIndex]  # 현재 진행중인 문제 가져오기
         gameData._nowQuiz = oxQuiz._answer  # 퀴즈 정답 등록
 
-        gameData._selectList.append(Config.EMOJI_ICON.OX[0]) # 보기에 넣기  
-        gameData._selectList.append(Config.EMOJI_ICON.OX[1]) 
+        gameData._selectList.append(Config.EMOJI_ICON.OX[0]) # 보기에 넣기
+        gameData._selectList.append(Config.EMOJI_ICON.OX[1])
 
         if oxQuiz._answer == "O":
             gameData._selectionAnswer = 0 #정답 번호 등록
         else:
             gameData._selectionAnswer = 1
-            
+
         gameData._selectPlayerMap.clear() #선택한 정답 맵 클리어
 
     async def question(self): #문제 내기
@@ -1057,7 +1060,7 @@ class OXQuiz(Quiz): #OX 퀴즈
 
         playBGM(voice, BGM_TYPE.BELL)
 
-        await asyncio.sleep(1.0) #1초 대기 후 
+        await asyncio.sleep(1.0) #1초 대기 후
 
         gameData._gameStep = GAME_STEP.WAIT_FOR_ANSWER
         if roundChecker != gameData._roundIndex:  return # 이미 다음 라운드라면 리턴
@@ -1088,14 +1091,14 @@ class OXQuiz(Quiz): #OX 퀴즈
         isWrong = True #정답자 존재하는가?
         answerPlayers = ""
         for player in gameData._selectPlayerMap:
-            if str(gameData._selectPlayerMap[player]) == answerIndex: #플레이어가 선택한 답과 정답이 일치하면          
+            if str(gameData._selectPlayerMap[player]) == answerIndex: #플레이어가 선택한 답과 정답이 일치하면
                 isWrong = False #정답자 존재!
                 answerPlayers += player.display_name + "\n"
                 answerFrame.addField(player.display_name, Config.EMOJI_ICON.ICON_GOOD)
                 self.addScore(player)
 
         answerFrame._title_visible = True
-        if isWrong: #오답일 시 
+        if isWrong: #오답일 시
             playBGM(voice, BGM_TYPE.FAIL)
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.getRandomWrongIcon() +" 정답 공개　　　　]"
             answerFrame._embedColor = discord.Color.red()
@@ -1125,13 +1128,13 @@ class OXQuiz(Quiz): #OX 퀴즈
             answerFrame._customFooter_text = Config.EMOJI_ICON.ICON_NOTICE + " 곧 다음 문제로 진행됩니다."
         else:
             answerFrame._customFooter_text = Config.EMOJI_ICON.ICON_NOTICE + " 이제 순위가 공개됩니다."
-        
+
         await ui.popFrame(channel, answerFrame)
 
         await asyncio.sleep(3)
 
     ##이벤트
-    async def action(self, reaction, user): 
+    async def action(self, reaction, user):
         emoji = reaction.emoji # 반응한 이모지 가져오기
 
         index = 0
@@ -1150,7 +1153,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         super().__init__(quizPath, quizUIFrame, voice, owner) #
         self._questionFile = ""
         self._answerFile = ""
-    
+
     def getAudio(self): #노래 파일 가져오기
         gameData = self
         quizPath = self._gamePath + self._nowQuiz + "/"
@@ -1164,16 +1167,16 @@ class IntroQuiz(Quiz): #인트로 퀴즈
                     audioLength = len(f) / f.samplerate #오디오 길이
                     f.close()
                 elif file.endswith(".mp3"): #확장자 mp3일때
-                    audio = MP3(gameData._questionFile) 
+                    audio = MP3(gameData._questionFile)
                     audio_info = audio.info
                     audioLength = int(audio_info.length) #음악 총 길이
 
             elif file.startswith("a"): #a로 시작하는게 정답파일
                 gameData._answerFile = quizPath + "/" + file  # 정답 설정
-                
+
             if isImage(file): #사진파일이라면 ,썸네일임
                 gameData._thumbnail = quizPath + "/" + file
-            
+
         return gameData._questionFile, audioLength
 
     async def question(self): #문제 내기
@@ -1194,13 +1197,13 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         quizUIFrame._useFormat = True #정해진 포맷 사용
 
         hintType = gameData._quizUIFrame._option._hintType # 힌트 타입 가져오기
-            
+
 
         limit = 0
 
         while repartCnt > 0: #반복횟수만큼 반복
             repartCnt -= 1
-            
+
             voice.stop() #우선 보이스 중지
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
             await fadeIn(voice) #페이드인
@@ -1225,8 +1228,8 @@ class IntroQuiz(Quiz): #인트로 퀴즈
             #재생이 끝난 후
             if roundChecker != gameData._roundIndex: return # 이미 다음 라운드라면 리턴
 
-            await asyncio.sleep(1) 
-                
+            await asyncio.sleep(1)
+
             if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER: #아직도 정답자 기다리는 중이면
                 if hintType == 2: #힌트 타입이 자동일 떄
                     await self.requestHint() #힌트 요청
@@ -1234,7 +1237,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
 
                 #카운트다운 끝난 후
                 if roundChecker != gameData._roundIndex: return # 이미 다음 라운드라면 리턴
-                if self.checkStop(): return #게임 중지됐으면 return       
+                if self.checkStop(): return #게임 중지됐으면 return
 
     async def showAnswer(self, isWrong=False): #정답 공개, isWrong 은 오답여부
         gameData = self
@@ -1264,7 +1267,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         answerFrame._sub_text = ""
 
         answerFrame._title_visible = True
-        if isWrong: #오답일 시 
+        if isWrong: #오답일 시
             #playBGM(voice, BGM_TYPE.FAIL)
             answerFrame._title_text = chr(173)+"[　　　　"+ Config.getRandomWrongIcon() +" 정답 공개　　　　]"
             answerFrame._embedColor = discord.Color.red()
@@ -1278,14 +1281,14 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         answerFrame._sub_text += Config.EMOJI_ICON.ICON_LIST + " **정답 목록**\n"+ chr(173) + "\n"+answerStr
 
         answerFrame._main_visible = False
-        
+
         if author != "": #추가 설명이 있다면
             answerFrame._notice_visible = True
             answerFrame._notice_text = Config.EMOJI_ICON.ICON_PEN + " *" + author + "*"
         else:
             answerFrame._notice_visible = False
 
-    
+
 
         answerFrame._field_visible = True
         for player in self.sortScore(): #점수판 추가
@@ -1297,7 +1300,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
             answerFrame._image_local = True
             answerFrame._image_url = gameData._thumbnail
 
-            
+
         answerFrame._page_visible = False
         answerFrame._path_visible = False
 
@@ -1351,7 +1354,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
                     else: #desc도 없다면, 문제 문장일거임
                         if(tmpOXQuiz != None): # 작업중인 ox 문제 객체가 있다면
                             tmpOXQuiz._questionText += line # line 추가
-                
+
             f.close()
 
             quizList = []  # 빈 리스트 선언
@@ -1412,7 +1415,7 @@ class TextQuiz(Quiz): #QNA 텍스트 퀴즈
         playBGM(voice, BGM_TYPE.BELL)
         await quizUIFrame.update()
 
-        await asyncio.sleep(1.0) #1초 대기 후 
+        await asyncio.sleep(1.0) #1초 대기 후
 
         gameData._gameStep = GAME_STEP.WAIT_FOR_ANSWER
         if roundChecker != gameData._roundIndex:  return # 이미 다음 라운드라면 리턴
@@ -1504,10 +1507,10 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     targetData._roundIndex = self._roundIndex
                 else:
                     self._roundIndex = targetData._roundIndex
-        
+
         try:
             if syncMessage != None:
-                await syncMessage.delete() #동기화 메시지 삭제     
+                await syncMessage.delete() #동기화 메시지 삭제
         except:
             Config.LOGGER.error("동기 메시지 삭제 에러")
             Config.LOGGER.error(traceback.format_exc())
@@ -1520,22 +1523,22 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         if self._voiceSync:
             self._voiceSync = False
             await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.OX[1]+" 보이스 동기화가 비활성화 됐습니다.\n"
-                    +"노래가 시작될때 보이스 재연결을 하지 않습니다.\n상대 서버보다 노래가 1초~2초 정도 늦게 들릴 수 있습니다."+chr(173)+" ```")
+                                         +"노래가 시작될때 보이스 재연결을 하지 않습니다.\n상대 서버보다 노래가 1초~2초 정도 늦게 들릴 수 있습니다."+chr(173)+" ```")
         else:
             self._voiceSync = True
             await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.OX[0]+" 보이스 동기화가 활성화 됐습니다.\n"
-                    +"노래가 시작될때 보이스 재연결을 진행합니다.\n상대 서버와 노래가 동시가 송출됩니다."+chr(173)+" ```")
+                                         +"노래가 시작될때 보이스 재연결을 진행합니다.\n상대 서버와 노래가 동시가 송출됩니다."+chr(173)+" ```")
 
 
     def submitScoreboard(self, winner):
         sendScoreMap = dict()
-        
+
         for guild in self._multiplayScoreMap.keys():
             if guild == winner: #승리자면
                 sendScoreMap[guild] = 1 #승리 점수
             else:
                 sendScoreMap[guild] = 0  #패배 점수
-    
+
         scoreboard = ui.getMultiplayScoreboard(self._gameName)  #퀴즈명으로 멀티용 순위표  가져오기
         scoreboard.mergeScore(sendScoreMap) #현재 한 퀴즈 결과에 대한 순위표와 병합
 
@@ -1579,7 +1582,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         myScore = 0 #내 점수
         for score in gameData._scoreMap.values():  # 정렬
             myScore += score #점수 합산
-            
+
         myGuild = self._guild
         tmpMap[myGuild] = myScore
 
@@ -1601,7 +1604,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     break  # while 빠져나가기
                 index += 1  # 다음 대상으로
             sortGuild.insert(index, guild)  # 삽입 장소에 추가
-        
+
         self._multiplayScoreMap.clear()
         for guild in sortGuild: #데이터 재삽입
             self._multiplayScoreMap[guild] = tmpMap[guild]
@@ -1657,7 +1660,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                         audioLength = len(f) / f.samplerate #오디오 길이
                         f.close()
                     elif file.endswith(".mp3"): #확장자 mp3일때
-                        audio = MP3(audioName) 
+                        audio = MP3(audioName)
                         audio_info = audio.info
                         length_in_secs = int(audio_info.length) #음악 총 길이
                         if length_in_secs > gameData._trimLength + 1: #음악이 자를 시간 초과할 시, 자르기 시작
@@ -1673,7 +1676,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                             endTime *= 1000 #s를 ms로
 
                             extract = song[startTime:endTime] #노래 자르기
-                            audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경 
+                            audioName = Config.TMP_PATH + "/" + str(guild.id) + ".mp3" #실제 실행할 음악파일 임시파일로 변경
 
                             extract.export(audioName) #임시 저장
                             audioLength = gameData._trimLength
@@ -1717,18 +1720,18 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
             try:
                 if syncMessage != None:
-                    await syncMessage.delete() #동기화 메시지 삭제     
+                    await syncMessage.delete() #동기화 메시지 삭제
             except:
                 Config.LOGGER.error("동기 메시지 삭제 에러")
                 Config.LOGGER.error(traceback.format_exc())
-        
+
         if self._audioData == None or self._audioData != targetData._audioData: #동기 실패시
             return False
 
         audioData = self._audioData
         audioName = audioData[0]
         audioLength = audioData[1]
-        
+
         repartCnt = gameData._repeatCount #반복횟수
 
         self._maxTime = audioLength * repartCnt
@@ -1739,7 +1742,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         quizUIFrame._useFormat = True #정해진 포맷 사용
 
         hintType = gameData._quizUIFrame._option._hintType # 힌트 타입 가져오기
-            
+
         await asyncio.sleep(1) #동기화 체킹을 위해 1초 대기
 
 
@@ -1762,7 +1765,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     except:
                         Config.LOGGER.error("voice reconnect error")
                 voice = self._voice
-            
+
             await asyncio.sleep(2)
 
             # voice.resume() #다시 재생, 버퍼 초기화
@@ -1789,7 +1792,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
             limit = 0
 
-            
+
             voice.play(source)  # 노래 재생
             await fadeIn(voice) #페이드인
             playTime = 2 #페이드인으로 2초 소비
@@ -1802,7 +1805,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 self._leftTime -= 1
                 leftTime = audioLength  - playTime #남은 길이
                 quizUIFrame._quizLeftTime = leftTime
-                
+
                 if hintType == 2: #힌트 타입이 자동일 떄
                     if playTime > audioLength // 2: #절반 이상 재생됐다면
                         await self.requestHint() #힌트 요청
@@ -1817,7 +1820,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     Config.LOGGER.error("fast end")
                     voice.stop()
                     break # 재생시간 초과면 break
-        
+
         return True
 
 
@@ -1827,7 +1830,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         # rdWait = random.randint(1,5)
         # print(str(self._guild.name)+ str(rdWait) +" 초")
         # await asyncio.sleep(rdWait)
-        
+
         #인원 수 표시 재설정
         try:
             self._quizUIFrame._notice_visible = True
@@ -1866,7 +1869,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             Config.LOGGER.error(traceback.format_exc())
 
         ###### 라운드 초기화
-        
+
         gameData._isSkiped = False
         gameData._useHint = False
         gameData._thumbnail = None # 썸네일 초기화
@@ -1892,7 +1895,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             isError = True
             Config.LOGGER.error(traceback.format_exc())
 
-                                        
+
         ###### 정답 공개
         if self.checkStop(): return
         if roundChecker != gameData._roundIndex:  # 이미 다음 라운드라면 리턴
@@ -1909,7 +1912,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 Config.LOGGER.error(traceback.format_exc())
 
             try:
-                await self.nextRound() #다음 라운드 진행 
+                await self.nextRound() #다음 라운드 진행
             except:
                 Config.LOGGER.error("nextRound error")
                 Config.LOGGER.error(traceback.format_exc())
@@ -1925,7 +1928,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             gameData._scoreMap[user] += score  # 있으면 점수 추가
         else:
             gameData._scoreMap[user] = score  # 없으면 새로 점수 추가
-    
+
     async def forceEnd(self): #멀티용 강제종료
         if self._gameStep == GAME_STEP.END: return
         self._gameStep = GAME_STEP.END
@@ -1933,15 +1936,15 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         targetData._gameStep = GAME_STEP.END #상대는 정상적으로 끝난거로 하기
 
         await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" 대전 도중 퀴즈를 종료하였습니다.\n대전은 "
-                +str(targetData._guild.name)+" 서버의 승리로 기록됩니다."+chr(173)+" ```")
+                                     +str(targetData._guild.name)+" 서버의 승리로 기록됩니다."+chr(173)+" ```")
 
         await targetData._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" "+str(self._guild.name)
-                +" 서버가 퀴즈를 종료하였습니다.\n대전은 "+str(targetData._guild.name)+" 서버의 승리로 기록됩니다."+chr(173)+" ```")
+                                           +" 서버가 퀴즈를 종료하였습니다.\n대전은 "+str(targetData._guild.name)+" 서버의 승리로 기록됩니다."+chr(173)+" ```")
 
         await targetData._voice.disconnect()
         self.submitScoreboard(targetData._guild) #상대의 승리 처리
         targetData.checkStop()
-        
+
 
     async def connectionTimeout(self, isDraw=False): #멀티용 연결 끊김
         if self._gameStep == GAME_STEP.END: return
@@ -1950,14 +1953,14 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         if isDraw:
             targetData = self._targetData
             await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" "+str(targetData._guild.name)
-                    +" 서버의 연결이 끊김.\n대전은 무승부로 기록됩니다.\n"+chr(173)+" \n```")
+                                         +" 서버의 연결이 끊김.\n대전은 무승부로 기록됩니다.\n"+chr(173)+" \n```")
 
             await self._voice.disconnect()
             self.checkStop()
         else:
             targetData = self._targetData
             await self._chatChannel.send("``` "+chr(173)+"\n"+Config.EMOJI_ICON.ICON_MULTIPLAY+" "+str(targetData._guild.name)
-                    +" 서버의 연결이 끊김.\n대전은 "+str(self._guild.name)+" 서버의 승리로 기록됩니다.\n"+chr(173)+" ```")
+                                         +" 서버의 연결이 끊김.\n대전은 "+str(self._guild.name)+" 서버의 승리로 기록됩니다.\n"+chr(173)+" ```")
 
             await self._voice.disconnect()
             self.checkStop()
@@ -1977,9 +1980,9 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                     continue #계속 탐색
 
                 self._targetData = target_gameData #저장
-                
+
                 try:
-                    await syncMessage.delete() #동기화 메시지 삭제     
+                    await syncMessage.delete() #동기화 메시지 삭제
                 except:
                     Config.LOGGER.error("동기 메시지 삭제 에러")
                     Config.LOGGER.error(traceback.format_exc())
@@ -1998,7 +2001,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             await asyncio.sleep(Config.SYNC_INTERVAL) # 0.1초마다 확인
 
             targetData = self._targetData
-        
+
             if self._multiOwner == None and targetData._multiOwner == None: #주도자가 아직 정해지지 않았다면
                 self._multiOwner = self #주도자를 자신으로 설정
                 targetData._multiOwner = self
@@ -2020,7 +2023,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 return
 
         try:
-            await syncMessage.delete() #동기화 메시지 삭제     
+            await syncMessage.delete() #동기화 메시지 삭제
         except:
             Config.LOGGER.error("동기 메시지 삭제 에러")
             Config.LOGGER.error(traceback.format_exc())
@@ -2038,7 +2041,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         channel = self._chatChannel
 
         voice.stop()
-        
+
         # rdWait = random.randint(3,20)
         # print(str(self._guild.name)+ str(rdWait) +" 초")
         # await asyncio.sleep(rdWait)
@@ -2048,7 +2051,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         gameData._gameStep = GAME_STEP.END
 
-        quizUIFrame._useFormat = False 
+        quizUIFrame._useFormat = False
 
         quizUIFrame._title_visible = True
         quizUIFrame._title_text = chr(173)+"[　　　　"+ Config.getMedalFromNumber(0) + " " + "순위 발표" + "　　　　]"
@@ -2086,15 +2089,15 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 quizUIFrame._notice_text += str(Config.getMedalFromNumber(i)) + " " + guildName + "　"+ chr(173) + "　" + str(multiplayScoreMap[guild]) + "점　" + chr(173)
 
                 if i == 1: #1등이면
-                    quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_POINT_TO_LEFT + "　**최고의 " + str(self._topNickname) + "**\n" 
+                    quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_POINT_TO_LEFT + "　**최고의 " + str(self._topNickname) + "**\n"
 
-                quizUIFrame._notice_text += chr(173) + "\n" 
+                quizUIFrame._notice_text += chr(173) + "\n"
 
                 if i <= 3: #3등까지는 한 개씩 보여줌
                     playBGM(voice, BGM_TYPE.SCORE_ALARM)
                     await quizUIFrame.update()
                     await asyncio.sleep(2)
-                
+
                 i += 1
 
             if len(gameData._scoreMap) > 3: #4명이상 플레이 했다면
@@ -2115,7 +2118,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
             if score > bestScore:
                 bestScore = score
                 mvpUser = user
-        
+
         targetData = self._targetData
         for user in targetData._scoreMap.keys():
             score = targetData._scoreMap[user]
@@ -2150,7 +2153,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         if not targetData._useHint: #상대가 힌트 사용 상태가 아니면
             return
-    
+
         #상대가 힌트 사용 상태인데 해당 객체가 힌트 요청했다면
 
         #힌트 표시
@@ -2176,7 +2179,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
                 hintIndex.append(rd)
                 index += 1
 
-        index = 0 
+        index = 0
         while index < answerLen:
             if index in hintIndex: #만약 해당 글자가 표시인덱스에 있다면
                 hintStr += answer[index] #해당 글자는 표시하기
@@ -2188,17 +2191,17 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
         asyncio.ensure_future(gameData._chatChannel.send("```markdown\n"+chr(173)+"\n""## 요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+" <힌트>　"+chr(173)+"* "+str(hintStr)+"\n"+chr(173)+"```"))
         asyncio.ensure_future(targetData._chatChannel.send("```markdown\n"+chr(173)+"\n""## 요청에 의해 힌트가 제공됩니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_HINT+" <힌트>　"+chr(173)+"* "+str(hintStr)+"\n"+chr(173)+"```"))
-        
+
 
     ##이벤트
     async def on_message(self, message):
         gameData = self
         author = message.author
-        
+
         if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER: #정답자 대기중이면
             inputAnswer = message.content.replace(" ", "").upper() #공백 제거 및 대문자로 변경
             isAnswer = False
-            for answer in gameData._answerList: #정답 목록과 비교 
+            for answer in gameData._answerList: #정답 목록과 비교
                 answer = answer.replace(" ", "").upper() # 공백 제거 및 대문자로 변경
                 if answer == inputAnswer:  # 정답과 입력값 비교 후 일치한다면
                     isAnswer = True
@@ -2206,7 +2209,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
 
             if isAnswer: #정답 맞췄다면
                 if gameData._gameStep == GAME_STEP.WAIT_FOR_ANSWER: #아직도 정답 대기자라면, 멀티에서만 확인 필요
-                    targetData = self._targetData 
+                    targetData = self._targetData
 
                     targetData._gameStep = GAME_STEP.WAIT_FOR_NEXT  # 상대 퀴즈 객체 다음 라운드 대기로 변경
                     gameData._gameStep = GAME_STEP.WAIT_FOR_NEXT  # 다음 라운드 대기로 변경
@@ -2239,7 +2242,7 @@ async def fadeIn(voice):
         while volume < 1.0:  # 페이드 인
             volume += 0.05
             voice.source.volume = volume  # 볼륨 설정
-            await asyncio.sleep(0.10)   
+            await asyncio.sleep(0.10)
     except:
         Config.LOGGER.error("fade In error")
         Config.LOGGER.error(traceback.format_exc())
@@ -2256,7 +2259,7 @@ async def fadeOut(voice):
             volume -= 0.05
             voice.source.volume = volume  # 볼륨 설정
             await asyncio.sleep(0.10)
-        
+
         voice.stop()  # 노래 중지
     except:
         Config.LOGGER.error("fade out error")
@@ -2284,7 +2287,7 @@ async def countdown(gameData, isLong=False): #카운트 다운
     voice.source = discord.PCMVolumeTransformer(voice.source)
     volume = 1.0 # 초기볼륨
     voice.source.volume = volume
-    
+
     limit = 0
     while voice.is_playing():  # 카운트다운중이면
         if(roundChecker != gameData._roundIndex): #이미 다음 라운드 넘어갔으면
@@ -2312,7 +2315,7 @@ def convert(seconds): #초 값을 시,분,초 로 반환
 
 def korean_to_be_single(korean_word):
     """
-    한글 단어를 입력받아서 초성/중성/종성을 구분하여 리턴해줍니다. 
+    한글 단어를 입력받아서 초성/중성/종성을 구분하여 리턴해줍니다.
     """
     ####################################
     # 초성 리스트. 00 ~ 18
@@ -2338,7 +2341,7 @@ def isImage(file):
         return True
     else:
         return False
-    
+
 def getGuildData(guild):
     if guild in dataMap.keys():  # 서버 데이터 가져오기
         guildData = dataMap[guild]
@@ -2384,6 +2387,8 @@ def getQuizTypeFromIcon(icon): #아이콘으로 퀴즈 타입 추측
         return GAME_TYPE.SONG
     elif icon == Config.EMOJI_ICON.ICON_TYPE_PICTURE:
         return GAME_TYPE.PICTURE
+    elif icon == Config.EMOJI_ICON.ICON_TYPE_PICTURE_LONG:
+        return GAME_TYPE.PICTURE_LONG
     elif icon == Config.EMOJI_ICON.ICON_TYPE_OX:
         return GAME_TYPE.OX
     elif icon == Config.EMOJI_ICON.ICON_TYPE_INTRO:
@@ -2396,7 +2401,7 @@ def getQuizTypeFromIcon(icon): #아이콘으로 퀴즈 타입 추측
         return GAME_TYPE.SELECT
     elif icon == Config.EMOJI_ICON.ICON_TYPE_MULTIPLAY:
         return GAME_TYPE.MULTIPLAY
-    
+
     return GAME_TYPE.SONG #디폴트
 
 
@@ -2468,14 +2473,17 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
 
     gameData = None
     if gameType == GAME_TYPE.PICTURE: #사진 퀴즈면
-        gameData = PictureQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
+        gameData = PictureQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
+    elif gameType == GAME_TYPE.PICTURE_LONG: #타이머 긴 사진 퀴즈면
+        gameData = PictureQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
+        gameData._isLongCount = True #롱 타이머 활성화
     elif gameType == GAME_TYPE.OX: #ox 퀴즈면
-        gameData = OXQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
+        gameData = OXQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
     elif gameType == GAME_TYPE.INTRO: #인트로 퀴즈면
-        gameData = IntroQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
+        gameData = IntroQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
     elif gameType == GAME_TYPE.QNA: #텍스트 퀴즈면
-        gameData = TextQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성   
-    elif gameType == GAME_TYPE.MULTIPLAY: #텍스트 퀴즈면
+        gameData = TextQuiz(quizPath, quizUiFrame, voice, owner)  # 퀴즈데이터 생성
+    elif gameType == GAME_TYPE.MULTIPLAY: #멀티플레이 퀴즈면
         targetGuild = quizInfoFrame._target._guild
         pathList = quizInfoFrame._pathList
         gameData = MultiplayQuiz(quizPath, quizUiFrame, voice, owner, targetGuild, pathList)  # 퀴즈데이터 생성   
@@ -2493,7 +2501,7 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
     quizUiFrame.setFunction(gameData.requestHint, gameData.skip, gameData.stop)
 
     guildData._gameData = gameData  # 해당 서버의 퀴즈데이터 저장
-        
+
     await ui.returnToTitle(guild) #퀴즈 선택 ui 메인화면으로
 
     await gameData.start()
@@ -2524,29 +2532,29 @@ async def test4(ctx): #비동기 함수 실행하고 잊기 fire and forget
     asyncio.ensure_future(test3(ctx))  # fire and forget async_foo()
 
 async def helpMessage(ctx): #도움말
-        sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.　, (!ㅋㅈ, !quiz, !QUIZ 도 가능)\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !중지 - 퀴즈를 강제로 중지합니다.\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !현황 - 퀴즈별 진행중인 서버수를 확인합니다.\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
-        sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
+    sendStr = Config.EMOJI_ICON.ICON_TIP + "[ 도움말 ]\n" + chr(173) + "\n"
+    sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !퀴즈 - 퀴즈 선택창을 생성합니다.　, (!ㅋㅈ, !quiz, !QUIZ 도 가능)\n"
+    sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !중지 - 퀴즈를 강제로 중지합니다.\n"
+    sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !현황 - 퀴즈별 진행중인 서버수를 확인합니다.\n"
+    sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !챗 <메세지> - 멀티플레이 퀴즈에서 상대방에게 메세지를 전송합니다.\n"
+    sendStr += Config.EMOJI_ICON.ICON_BOOK_RED + " !보이스동기화 - 멀티플레이 퀴즈에서 보이스 동기화를 ON/OFF 합니다.\n"
 
-        sendStr += chr(173) + "\n"
+    sendStr += chr(173) + "\n"
 
-        sendStr += "봇 이름:　" + "퀴즈봇2\n"
-        sendStr += "봇 버전:　" + Config.VERSION + "\n"
-        sendStr += "제작 　:　제육보끔#1916\n"
-        sendStr += "패치일 :　" + Config.LAST_PATCH + "\n"
+    sendStr += "봇 이름:　" + "퀴즈봇2\n"
+    sendStr += "봇 버전:　" + Config.VERSION + "\n"
+    sendStr += "제작 　:　제육보끔#1916\n"
+    sendStr += "패치일 :　" + Config.LAST_PATCH + "\n"
 
-        sendStr += chr(173) + "\n"
+    sendStr += chr(173) + "\n"
 
-        sendStr += Config.EMOJI_ICON.ICON_PHONE + " Contact\n" +chr(173) + "\n"
-        sendStr += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
-        sendStr += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
-        sendStr += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
-        sendStr += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
+    sendStr += Config.EMOJI_ICON.ICON_PHONE + " Contact\n" +chr(173) + "\n"
+    sendStr += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
+    sendStr += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
+    sendStr += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
+    sendStr += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
 
-        await ctx.send("```" + chr(173) +"\n" + str(sendStr) + "\n```")
+    await ctx.send("```" + chr(173) +"\n" + str(sendStr) + "\n```")
 
 
 async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 공지사항 번호
@@ -2577,7 +2585,7 @@ async def on_ready():
     Config.LOGGER.info(f'{bot.user} 활성화됨')
     await bot.change_presence(status=discord.Status.online) #온라인
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
-  
+
     Config.LOGGER.info("봇 이름:" + str(bot.user.name) + ", 봇 아이디:" + str(bot.user.name) + ", 봇 버전:" + discord.__version__)
     for guild in bot.guilds:
         print(guild.name)
@@ -2683,7 +2691,7 @@ async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
         if guild.id in newGuilds:
 
             await ctx.send("> 🛑 어라? 퀴즈봇을 추가하고 **새로운 채널**을 생성하지 않으신 것 같은데 괜찮으세요?\n> ❗ 퀴즈가 진행되는 채널은 **채팅 청소**를 진행하여 ***모든 메시지가 사라집니다!***\n "+
-                    "> 😃 퀴즈봇 전용 채팅 채널을 생성 후 진행하는 것을 추천드려요!\n" + chr(173) + "\n" + "> 📔 이 메세지는 퀴즈를 한 번이라도 시작하면 더 이상 표시되지 않습니다.\n")
+                           "> 😃 퀴즈봇 전용 채팅 채널을 생성 후 진행하는 것을 추천드려요!\n" + chr(173) + "\n" + "> 📔 이 메세지는 퀴즈를 한 번이라도 시작하면 더 이상 표시되지 않습니다.\n")
 
 
 @bot.event
@@ -2714,7 +2722,7 @@ async def on_message(message):
         if(gameData == None):  # 게임데이터가 없으면 return
             return
         if message.channel != gameData._chatChannel: #채팅 채널이 게임데이터에 저장된 채팅채널과 일치하지 않으면
-            return 
+            return
         if(gameData._gameStep == GAME_STEP.START or gameData._gameStep == GAME_STEP.END):  # 룰 설명중, 엔딩중이면
             asyncio.ensure_future(message.delete())
             #await message.delete()
@@ -2763,7 +2771,7 @@ async def on_reaction_add(reaction, user):
                 return
         await gameData.action(reaction, user) #이벤트 동작
 
-        
+
 
 
 # @bot.event #봇이 삭제하는 것도 막기 때문에 못씀
@@ -2774,7 +2782,7 @@ async def on_reaction_add(reaction, user):
 
 #     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
 #         await reaction.message.add_reaction(emoji=emoji) #다시 추가
-                
+
 
 @bot.event
 async def on_reaction_remove(reaction, user):
@@ -2790,8 +2798,8 @@ async def on_reaction_remove(reaction, user):
     #     return
 
     if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
-            await reaction.message.add_reaction(emoji=emoji) #다시 추가
-                
+        await reaction.message.add_reaction(emoji=emoji) #다시 추가
+
 
 #커맨드 에러 핸들링
 @bot.event

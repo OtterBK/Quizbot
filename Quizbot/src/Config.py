@@ -10,15 +10,15 @@ RESOURCE_PATH = "/home/ubuntu/quizbot/resource/"
 QUIZ_PATH = RESOURCE_PATH + "gameData/"  # 게임 소스폴더
 MULTI_PATH = RESOURCE_PATH + "multiplay/"  # 멀티플레이 소스폴더
 BGM_PATH = RESOURCE_PATH + "bgm/"  # 효과음 폴더
-SAVE_PATH = RESOURCE_PATH + "download/" 
+SAVE_PATH = RESOURCE_PATH + "download/"
 TMP_PATH = RESOURCE_PATH + "tmp/" #임시폴더
 DATA_PATH = RESOURCE_PATH + "savedata/" #데이터 저장 폴더
 OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
-VERSION = "2.08"
-LAST_PATCH = "21/02/18"
+VERSION = "2.09"
+LAST_PATCH = "21/03/12"
 EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://koreanbots.dev/bots/788060831660114012"
 
@@ -44,7 +44,7 @@ if KOREA_BOT_TOKEN == "":
         KOREA_BOT_TOKEN = f.readline().strip()
         f.close()
     except:
-        print("토큰 로드 에러")
+        print("한국 봇 토큰 로드 에러")
 
 #이모지 아이콘
 class EMOJI_ICON(enumerate): #이모지
@@ -55,11 +55,11 @@ class EMOJI_ICON(enumerate): #이모지
     PLAY_LEFT = "⏪"
     PLAY_PAUSE_AND_RESUME = "⏯️"
     PLAY_STOP = "⏹️"
-    PLAY_RIGHT = "⏩" 
-    PLAY_SUB_FAST = "⬅️" 
-    PLAY_SUB_SLOW = "➡️" 
-    PLAY_AUDIO_FAST = "◀️" 
-    PLAY_AUDIO_SLOW = "▶️" 
+    PLAY_RIGHT = "⏩"
+    PLAY_SUB_FAST = "⬅️"
+    PLAY_SUB_SLOW = "➡️"
+    PLAY_AUDIO_FAST = "◀️"
+    PLAY_AUDIO_SLOW = "▶️"
 
     ICON_FOLDER = "📁"
     ICON_SEARCH = "🔍"
@@ -113,7 +113,7 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_FIGHT = "🥊"
     ICON_TROPHY = "🏆"
     ICON_NET = "🙋‍♂️"
-    
+
 
     CLOCK_0 = "🕛"
     CLOCK_1 = "🕐"
@@ -138,8 +138,9 @@ class EMOJI_ICON(enumerate): #이모지
     ICON_TYPE_QNA = "👨‍🎓"
     ICON_TYPE_INTRO = "🎶"
     ICON_TYPE_MULTIPLAY = "🛰"
+    ICON_TYPE_PICTURE_LONG = "🃏"
     ALPHABET = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"
-                    , "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+        , "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
     NUMBER = [ "0️⃣", "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
     OX = ["⭕", "❌"] #ox퀴즈용
 
@@ -170,7 +171,7 @@ def __get_logger():
 
 
 
-def getAlphabetFromIndex(index): 
+def getAlphabetFromIndex(index):
     return EMOJI_ICON.ALPHABET[index]
 
 
