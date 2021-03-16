@@ -8,7 +8,6 @@ import time
 import asyncio
 import soundfile as sf
 import random
-import SelectionList
 import math
 from threading import Thread
 from mutagen.mp3 import MP3
@@ -2445,7 +2444,11 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
     #퀴즈 시작
     voice = get(bot.voice_clients, guild=guild)
     if voice == None or not voice.is_connected():  # 음성 연결 안됐다면
-        voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+        try:
+            voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+        except: #보통 Already voice connected 문제 발생시
+            await chattingChannel.send("❗ 예기지 못한 문제가 발생하였습니다. 재시도해주세요. 해당 문제가 지속적으로 발생할 시 \n💌 [ otter6975@gmail.com ] 으로 문의바랍니다.")
+            await voice.disconnect(True) #보이스 강제로 연결끊기
 
     quizInfoFrame._started = False
 
