@@ -17,8 +17,8 @@ OPTION_PATH = DATA_PATH + "option/" #옵션 데이터 저장 폴더
 RANK_PATH = DATA_PATH + "rank/" #랭크 데이터 저장 폴더
 PATCHNOTE_PATH = DATA_PATH + "patchnote/" #패치노트 폴더
 
-VERSION = "2.10"
-LAST_PATCH = "21/03/12"
+VERSION = "2.12"
+LAST_PATCH = "21/04/22"
 EMAIL_ADDRESS = "otter6975@gmail.com"
 BOT_LINK = "https://koreanbots.dev/bots/788060831660114012"
 
@@ -155,7 +155,7 @@ def __get_logger():
     # formatter = logging.Formatter(
     #     '%(levelname)s##%(asctime)s##%(message)s >> @@file::%(filename)s@@line::%(lineno)s')
 
-    formatter = logging.Formatter("%(asctime)s   >>   %(message)s")
+    formatter = logging.Formatter("[%(levelname)s] %(asctime)s   >>   %(message)s")
 
     # 스트림 핸들러 정의
     stream_handler = logging.StreamHandler()

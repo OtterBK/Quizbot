@@ -852,7 +852,12 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             self._title_text = chr(173)+"[　　　　"+ self._quizIcon + " " + self._quizName + "　　　　]"
 
             self._sub_visible = True
-            self._sub_text = getClockIcon(self._quizLeftTime, self._quizMaxTime) +"　남은 시간:　**" + str(int(self._quizLeftTime)) + "초**"
+            self._sub_text = getClockIcon(self._quizLeftTime, self._quizMaxTime) +"　남은 시간:　**" + str(int(self._quizLeftTime)) + "초**\n" + chr(173) + "\n"
+            self._sub_text += Config.EMOJI_ICON.ICON_TIP + "\n"
+            self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!힌트** - 힌트 요청\n"
+            self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!스킵** - 스킵 요청\n"
+            self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!중지** - 퀴즈 중지"
+            self._sub_text += Config.EMOJI_ICON.ICON_INFO + "　또는 하단의 이모지를 클릭해주세요."
 
             self._customFooter_visible = True
             self._customFooter_text = Config.EMOJI_ICON.ICON_BOX+" 문제: " + str(self._quizRound) + " / "+str(self._quizCnt) +"　|　" 
@@ -911,9 +916,9 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
 
             quizUIMessage = await self._chatChannel.send(embed=quizUIEmbed)
 
-            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_HINT) #힌트
-            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP) #스킵
-            await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP) #중지
+            asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_HINT)) #힌트
+            asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP)) #스킵
+            asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP)) #중지
 
             await showFrame(quizUIMessage, self, isPopUp=False) #띄우기
 
@@ -950,64 +955,73 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
     def setOption(self, option):
         self._option = option #옵션 설정
 
+    async def hintAction(self, playerName, message):
+        option = self._option
+
+        if self._hint_use:
+            return
+
+        if playerName in self._vote_hint: #이미 투표했다면
+            return
+
+        if option._hintType == 0: #투표 타입일 시
+            self._vote_hint.append(playerName) #투표 처리
+            asyncio.ensure_future(message.channel.send("```"+playerName.display_name+" 님이 힌트 요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_HINT+"　"+str(len(self._vote_hint))+" / "+str(self._vote_hint_min)+"```"))
+        elif option._hintType == 1: #주최자 타입일 시
+            if self._quizOwner == playerName: #주최자인 경우에만
+                self._vote_hint.append(playerName) #투표 처리
+        elif option._hintType == 3: #사용불가일 시
+            return
+        elif option._hintType == 4: #멀티플레이
+            if len(self._vote_hint) == 0: #투표 아무도 안했다면
+                self._vote_hint.append(playerName) #투표 처리
+
+        if len(self._vote_hint) >= self._vote_hint_min: #최저 투표수를 넘었다면
+            self._hint_use = True
+            asyncio.ensure_future(self._fun_requestHint()) #힌트 요청
+
+    async  def skipAction(self, playerName, message):
+
+        option = self._option
+
+        if self._skip_use: return
+
+        if playerName in self._vote_skip: #이미 투표했다면
+            return
+
+        if option._skipType == 0: #투표 타입일 시
+            self._vote_skip.append(playerName) #투표 처리
+            asyncio.ensure_future(message.channel.send("```"+playerName.display_name+" 님이 스킵하기에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_SKIP+"　"+str(len(self._vote_skip))+" / "+str(self._vote_skip_min)+"```"))
+        elif option._skipType == 1: #주최자 타입일 시
+            if self._quizOwner == playerName: #주최자인 경우에만
+                self._vote_skip.append(playerName) #투표 처리
+        elif option._skipType == 2: #사용불가일 시
+            return
+
+        if len(self._vote_skip) >= self._vote_skip_min: #최저 투표수를 넘었다면
+            self._skip_use = True
+            asyncio.ensure_future(self._fun_skip()) #스킵
+
+    async def stopAction(self, playerName, message):
+        if self._stop_use: return
+
+        if self._quizOwner == playerName: #주최자인 경우에만
+            asyncio.ensure_future(self._fun_stop()) #중지
+
     async def action(self, reaction, user, selectorData): 
         emoji = reaction.emoji
         message = reaction.message
         guild = message.guild
         playerName = user
 
-        option = self._option
         if emoji == Config.EMOJI_ICON.ICON_HINT: #각 경우에 맞게 행동
-
-            if self._hint_use:
-                return
-
-            if playerName in self._vote_hint: #이미 투표했다면
-                return
-
-            if option._hintType == 0: #투표 타입일 시 
-                self._vote_hint.append(playerName) #투표 처리
-                await message.channel.send("```"+playerName.display_name+" 님이 힌트 요청에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_HINT+"　"+str(len(self._vote_hint))+" / "+str(self._vote_hint_min)+"```")
-            elif option._hintType == 1: #주최자 타입일 시
-                if self._quizOwner == user: #주최자인 경우에만
-                    self._vote_hint.append(playerName) #투표 처리
-            elif option._hintType == 3: #사용불가일 시
-                return
-            elif option._hintType == 4: #멀티플레이 
-                if len(self._vote_hint) == 0: #투표 아무도 안했다면
-                    self._vote_hint.append(playerName) #투표 처리
-
-            if len(self._vote_hint) >= self._vote_hint_min: #최저 투표수를 넘었다면
-                self._hint_use = True
-                await self._fun_requestHint() #힌트 요청
+            await self.hintAction(playerName, message) # 힌트 사용
 
         elif emoji == Config.EMOJI_ICON.ICON_SKIP: 
-            
-            if self._skip_use: return
+            await self.skipAction(playerName, message) # 스킵
 
-            if playerName in self._vote_skip: #이미 투표했다면
-                return
-
-            if option._skipType == 0: #투표 타입일 시 
-                self._vote_skip.append(playerName) #투표 처리
-                await message.channel.send("```"+playerName.display_name+" 님이 스킵하기에 투표하셨습니다.　"+chr(173)+"　"+chr(173)+"　"+Config.EMOJI_ICON.ICON_SKIP+"　"+str(len(self._vote_skip))+" / "+str(self._vote_skip_min)+"```")
-            elif option._skipType == 1: #주최자 타입일 시
-                if self._quizOwner == user: #주최자인 경우에만
-                    self._vote_skip.append(playerName) #투표 처리
-            elif option._skipType == 2: #사용불가일 시
-                return
-                    
-
-            if len(self._vote_skip) >= self._vote_skip_min: #최저 투표수를 넘었다면
-                self._skip_use = True
-                await self._fun_skip() #스킵
-
-        elif emoji == Config.EMOJI_ICON.ICON_STOP: 
-
-            if self._stop_use: return
-
-            if self._quizOwner == user: #주최자인 경우에만
-                await self._fun_stop() #중지
+        elif emoji == Config.EMOJI_ICON.ICON_STOP:
+            await self.stopAction(playerName, message) # 중지
 
 
 class ScoreboardFrame(QFrame): #순위표 표시 화면
@@ -1943,7 +1957,7 @@ def getDisplayOption(OptionType, value): #옵션 타입과 값에 따라 적절�
         elif value == 2:
             return "사용불가", "문제를 건너뛸 수 없습니다."
     elif OptionType == OPTION_TYPE.TRIM_LENGTH: #노래 길이일 경우
-            return str(value)+"초", "문제로 제시되는 음악 파일의 길이를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"문제로 제시되는 노래의 재생구간은 매번 임의로 정해지는데\n이때 노래의 재생 길이를 변경합니다.\n노래 관련 퀴즈에서만 지원하는 기능이며 아래 퀴즈에서는 지원하지 않습니다.\n"+chr(173)+"\n"+"국내가요1\n"+"국내가요2\n"+"애니더빙곡1\n"+"애니더빙곡2\n"+"애니송1\n"+"애니송2\n"
+            return str(value)+"초", "문제로 제시되는 음악 파일의 길이를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"문제로 제시되는 노래의 재생구간은 매번 임의로 정해지는데\n이때 노래의 재생 길이를 변경합니다.\n노래 관련 퀴즈에서만 지원하는 기능입니다."
     elif OptionType == OPTION_TYPE.REPEAT_COUNT: #반복 횟수의 경우
             return str(value)+"회", "문제로 제시되는 음악 파일의 반복 재생 횟수를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"노래 관련 퀴즈에서만 지원하는 기능입니다."
     
@@ -1972,7 +1986,7 @@ async def clearChat(chatChannel): #메시지 삭제
         return not msg in excludeMsg 
 
     try:
-        await chatChannel.purge(check=check, limit=number)
+        asyncio.ensure_future(chatChannel.purge(check=check, limit=number))
     except:
         Config.LOGGER.error("clearchat error")
         Config.LOGGER.error(traceback.format_exc())
@@ -2079,13 +2093,13 @@ async def createSelectorUI(channel): #초기 UI생성
     selectorData._frameStack = [] #프레임 스택 초기화
 
     #버튼 달기
-    await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PREV)
+    asyncio.ensure_future(quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PREV))
     i = 1
     while i < 6: #1~5번 버튼만
-        await quizListMessage.add_reaction(Config.EMOJI_ICON.NUMBER[i])
+        asyncio.ensure_future(quizListMessage.add_reaction(Config.EMOJI_ICON.NUMBER[i]))
         i += 1
-    await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PARENT)
-    await quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_NEXT)
+    asyncio.ensure_future(quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_PARENT))
+    asyncio.ensure_future(quizListMessage.add_reaction(Config.EMOJI_ICON.PAGE_NEXT))
 
     await showFrame(quizListMessage, MainFrame(), isPopUp=False)
 
@@ -2104,9 +2118,9 @@ async def createQuizUI(channel, quizPath, owner): #초기 UI생성
 
     quizUIMessage = await channel.send(embed=quizUIEmbed)
 
-    await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_HINT) #힌트
-    await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP) #스킵
-    await quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP) #중지
+    asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_HINT)) #힌트
+    asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_SKIP))#스킵
+    asyncio.ensure_future(quizUIMessage.add_reaction(Config.EMOJI_ICON.ICON_STOP)) #중지
 
     guildID = channel.guild.id
     quizUIFrame = QuizUIFrame(quizPath, channel)  #UI프레임 생성
