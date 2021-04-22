@@ -1207,6 +1207,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
             voice.stop() #우선 보이스 중지
             voice.play(discord.FFmpegPCMAudio(audioName))  # 노래 재생
             asyncio.ensure_future(fadeIn(voice)) #페이드인
+            playTime = 0
 
             while voice.is_playing():  # 재생중이면
                 if(roundChecker != gameData._roundIndex): #이미 다음 라운드 넘어갔으면
@@ -1250,6 +1251,7 @@ class IntroQuiz(Quiz): #인트로 퀴즈
         voice.stop() #즉각 보이스 스탑
         voice.play(discord.FFmpegPCMAudio(gameData._answerFile))  # 정답 재생
         asyncio.ensure_future(fadeIn(voice)) #페이드인
+        playTime = 0
 
         author = ""
         tmpSp = gameData._nowQuiz.split("&^")
