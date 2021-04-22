@@ -603,7 +603,7 @@ class Quiz:
 
     async def start(self):
         self.init() #초기화
-        #await self.gameRule()
+        await self.gameRule()
         if self.checkStop(): return #게임 중지 체크
         await self.prepare() #전처리
         if self.checkStop(): return #게임 중지 체크
