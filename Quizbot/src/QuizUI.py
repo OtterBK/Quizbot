@@ -856,7 +856,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             self._sub_text += Config.EMOJI_ICON.ICON_TIP + "\n"
             self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!힌트** - 힌트 요청\n"
             self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!스킵** - 스킵 요청\n"
-            self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!중지** - 퀴즈 중지"
+            self._sub_text += Config.EMOJI_ICON.ICON_HINT + "　**!중지** - 퀴즈 중지\n"
             self._sub_text += Config.EMOJI_ICON.ICON_INFO + "　또는 하단의 이모지를 클릭해주세요."
 
             self._customFooter_visible = True
