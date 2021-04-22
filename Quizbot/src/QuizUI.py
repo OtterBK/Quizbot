@@ -1867,7 +1867,7 @@ def loadOption(): #옵션 파일 로드
     multiplayOption = QOption("-1") #멀티용
     multiplayOption._hintType = 4 #멀티
     multiplayOption._skipType = 2 #사용불가
-    multiplayOption._trimLength = 30 
+    multiplayOption._trimLength = 35 #멀티플레이용 노래는 35초 
     multiplayOption._repeatCount = 1
     optionMap["-1"] = multiplayOption
 
