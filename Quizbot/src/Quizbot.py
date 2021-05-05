@@ -2794,6 +2794,7 @@ async def on_reaction_add(reaction, user):
     if user == bot.user:  # 봇이 입력한거면
         return  # 건너뛰어
 
+    guild = reaction.message.guild # 반응한 서버
     channel = reaction.message.channel  # 반응 추가한 채널
     message = reaction.message
     guildData = getGuildData(reaction.message.guild)
@@ -2803,7 +2804,7 @@ async def on_reaction_add(reaction, user):
     #     return
 
     isAlreadyRemove = False
-    if channel.id == guildData._selectorChannelID: #반응한 채널이 퀴즈선택 메시지 있는 채널이라면
+    if guild.id == guildData._guildID: #반응한 서버가 퀴즈선택 메시지 있는 서버라면
         if not isAlreadyRemove:
             try:
                 isAlreadyRemove = True
@@ -2815,7 +2816,7 @@ async def on_reaction_add(reaction, user):
                 return
         asyncio.ensure_future(ui.on_reaction_add(reaction, user)) #이벤트 동작
 
-    if gameData != None and gameData._chatChannel == channel:  # 현재 게임중인 채널이면
+    if gameData != None and guild.id == guildData._guildID:  # 현재 게임중인 서버라면
         if not isAlreadyRemove:
             try:
                 isAlreadyRemove = True
