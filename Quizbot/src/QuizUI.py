@@ -31,6 +31,7 @@ rankMap = dict() #각 길드의 랭크 데이터
 
 matchingCategory = dict() #카테고리별 매칭 대기열 
 MULTIPLAY_RANKNAME = "multiplay"
+random.seed() #시드 설정
 
 class SelectorData:
     def __init__(self, selectorMessage):
@@ -909,7 +910,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         if not isSuc:
             Config.LOGGER.error("퀴즈 UI 업데이트 에러, UI 재생성")
             Config.LOGGER.error(traceback.format_exc())
-            quizUIEmbed = discord.Embed(title="UI 재생성 중...", url=None, description="잠시만 기다려주세요.\n", color=discord.Color.blue())
+            quizUIEmbed = discord.Embed(title="UI 재생성 중...", url="", description="잠시만 기다려주세요.\n", color=discord.Color.blue())
             quizUIEmbed.set_author(name=bot.user.name, url="",
                         icon_url=bot.user.avatar_url)
             quizUIEmbed.remove_author()
@@ -950,7 +951,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
             self._vote_skip_min = voicePeopleCnt // 2 #최저 힌트 투표 수
         elif self._option._skipType == 1: #주최자 유형이면
             self._vote_skip_min = 1 #주최자 1명이면됨
- 
+
 
     def setOption(self, option):
         self._option = option #옵션 설정
@@ -1008,7 +1009,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         if self._quizOwner == playerName: #주최자인 경우에만
             asyncio.ensure_future(self._fun_stop()) #중지
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         emoji = reaction.emoji
         message = reaction.message
         guild = message.guild
@@ -1017,7 +1018,7 @@ class QuizUIFrame(QFrame): #퀴즈 ui 프레임
         if emoji == Config.EMOJI_ICON.ICON_HINT: #각 경우에 맞게 행동
             await self.hintAction(playerName, message) # 힌트 사용
 
-        elif emoji == Config.EMOJI_ICON.ICON_SKIP: 
+        elif emoji == Config.EMOJI_ICON.ICON_SKIP:
             await self.skipAction(playerName, message) # 스킵
 
         elif emoji == Config.EMOJI_ICON.ICON_STOP:
@@ -1041,7 +1042,7 @@ class ScoreboardFrame(QFrame): #순위표 표시 화면
 
         self._page_visible = True
         self._page_nowPage = 0
-        
+
         self._path_visible = True
         self._path_text = str(scoreboard._quizName)+"/순위표/"
 
@@ -1051,11 +1052,11 @@ class ScoreboardFrame(QFrame): #순위표 표시 화면
 
         ##추가
         self._scoreboard = scoreboard
-        
+
         self.setScore() #main에 scoreboard 표시
 
     def setScore(self):
-        
+
         self._main_text.clear()
         scoreMap = self._scoreboard._score
 
@@ -1066,7 +1067,7 @@ class ScoreboardFrame(QFrame): #순위표 표시 화면
                 stat = scoreMap[playerName]
                 self.addMain(playerName + "　**" + chr(173) + "　"+ chr(173) + str(stat._topScore)+ "점**")
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
 
@@ -1087,7 +1088,7 @@ class MultiplayScoreboardFrame(ScoreboardFrame): #순위표 표시 화면
 
         self._page_visible = True
         self._page_nowPage = 0
-        
+
         self._path_visible = True
         self._path_text = str(multiplayScoreboard._quizName)+"/순위표/"
 
@@ -1097,11 +1098,11 @@ class MultiplayScoreboardFrame(ScoreboardFrame): #순위표 표시 화면
 
         ##추가
         self._scoreboard = multiplayScoreboard
-        
+
         self.setScore() #main에 scoreboard 표시
 
     def setScore(self):
-        
+
         self._main_text.clear()
         scoreMap = self._scoreboard._score
 
@@ -1112,7 +1113,7 @@ class MultiplayScoreboardFrame(ScoreboardFrame): #순위표 표시 화면
                 multiplayStat = scoreMap[guildID]
                 self.addMain(str(multiplayStat._guildName) + "　**" + chr(173) + "　"+ chr(173) + str(multiplayStat._multiStat_win)+ " 승　|　"+str(multiplayStat._multiStat_defeat)+" 패"+"**")
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
 
@@ -1131,14 +1132,14 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
 
         self._notice_visible = True
         self._notice_text = ""
-    
+
 
         self._field_visible = False
 
         self._customFooter_visible = False
 
         self._page_visible = True
-        
+
         self._path_visible = True
         self._path_text = "멀티 플레이/"
 
@@ -1162,7 +1163,7 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
     def getMainList(self):
 
         viewPath = "멀티 플레이/" #표시용 패스
-        
+
         allPath = self._myPath #절대 경로
 
         self._path_text = viewPath #패스 표시
@@ -1190,7 +1191,7 @@ class MultiplayFrame(QFrame): #멀티플레이 화면
 
         self._notice_text = Config.EMOJI_ICON.ICON_BOX+ "　항목 수 : **" + str(len(self._absoluteMap.keys())) + "개**"
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
         emoji = reaction.emoji
@@ -1272,7 +1273,7 @@ class MultiplayInfoFrame(QFrame):
         self._pathList = []
 
         self.loadQuizInfo()
-    
+
     def loadQuizInfo(self): #퀴즈 정보 로드
         infoPath = self._myPath + "info.txt"
 
@@ -1311,14 +1312,14 @@ class MultiplayInfoFrame(QFrame):
             Config.LOGGER.error("파일 로드 에러, "+infoPath)
             Config.LOGGER.error(traceback.format_exc())
             infoText = "퀴즈 정보를 불러올 수 없습니다."
-            
+
         self._pathList = pathList
         self._quizDesc = infoText
 
         subText = Config.EMOJI_ICON.ICON_TYPE + "　퀴즈 유형:　**" + self._quizTypeName + "**" + "\n"
         #subText += Config.EMOJI_ICON.ICON_BOX + "　문제 수　:　**" + str(self._quizCnt) + "개**" + "\n"
         subText += chr(173)+"\n"+"" + self._quizDesc + "\n" +chr(173) + "\n"
-        
+
         self._sub_text = subText
 
     def paint(self, message):
@@ -1368,7 +1369,7 @@ class MultiplayInfoFrame(QFrame):
         if voice == None or voice.is_connected():
             voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
 
-        if voice == None: 
+        if voice == None:
             self._notice_text = Config.EMOJI_ICON.ICON_WARN + " 음성 객체를 가져오는데 실패했습니다.."
             await self.update()
             return
@@ -1387,7 +1388,7 @@ class MultiplayInfoFrame(QFrame):
 
         clockCnt = 11
         while True:
-            if self._stopFlag: 
+            if self._stopFlag:
                 if self in matchingQueue:
                     matchingQueue.remove(self) #큐에서 삭제
                 voice = get(bot.voice_clients, guild=self._myMessage.channel.guild)
@@ -1422,14 +1423,14 @@ class MultiplayInfoFrame(QFrame):
             if len(self._receive) > 0: #메시지함에 뭐라도 있으면
                 netMessage = self._receive[0] #가장 top 메시지 가져옴
                 del self._receive[0] #가져오면 삭제
-                
+
                 sender = netMessage._sender
                 messageType = netMessage._NET_MESSAGE_TYPE
 
                 if messageType == NET_MESSAGE_TYPE.REQUEST: #연결 요청일 경우
                     self.sendNetMessage(sender, NET_MESSAGE_TYPE.ACK) #연결 수락 보냄
                     self._notice_text += "대전 상대를 찾았습니다. 연결 요청 중..."
-                    
+
                 elif messageType == NET_MESSAGE_TYPE.ACK: #연결 요청 수락일 경우
                     self.sendNetMessage(sender, NET_MESSAGE_TYPE.CONNECT) #연결 시작 보냄
                     self._notice_text += "대전 상대와 연결 중..."
@@ -1442,7 +1443,7 @@ class MultiplayInfoFrame(QFrame):
                     break
 
             else: #메시지 온게 없다면
-                
+
                 myIndex = matchingQueue.index(self)
                 if  myIndex < len(matchingQueue) - 1: #자신이 대기열의 마지막이 아니라면
                     if not isConnecting: #이미 연결중이 아니면
@@ -1488,12 +1489,12 @@ class MultiplayInfoFrame(QFrame):
 
 
     def sendNetMessage(self, target, messageType):
-        
+
         netMessage = NetMessage(self, messageType)
         target._receive.insert(0, netMessage) #메시지 전송
 
-    
-    async def action(self, reaction, user, selectorData): 
+
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
         emoji = reaction.emoji
@@ -1524,7 +1525,7 @@ class SettingFrame(QFrame): #옵션 화면
 
         self._page_visible = True
         self._page_nowPage = 0
-        
+
         self._path_visible = True
         self._path_text = "설정/"
 
@@ -1542,7 +1543,7 @@ class SettingFrame(QFrame): #옵션 화면
         guild = message.guild
         option = getOption(guild) #옵션 객체 가져오기
         self._option = option
-        
+
         hintTypeDisplay = getDisplayOption(OPTION_TYPE.HINT_TYPE, option._hintType)
         skipTypeDisplay = getDisplayOption(OPTION_TYPE.SKIP_TYPE, option._skipType)
         trimLengthDisplay = getDisplayOption(OPTION_TYPE.TRIM_LENGTH, option._trimLength)
@@ -1556,7 +1557,7 @@ class SettingFrame(QFrame): #옵션 화면
         self.addMain(Config.EMOJI_ICON.ICON_RESET + " 설정 초기화")
         self._option.save() #옵션 저장
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
         emoji = reaction.emoji
@@ -1568,16 +1569,16 @@ class SettingFrame(QFrame): #옵션 화면
 
             if number == 1: #각 경우에 맞게 행동
                 await showFrame(message, SettingValueFrame(self._option, Config.EMOJI_ICON.ICON_HINT, "힌트 요청 방식", "힌트 방식", OPTION_TYPE.HINT_TYPE, 0, 2, 1), isPopUp=True) #카테고리 선택창 표시
-            elif number == 2: 
+            elif number == 2:
                 await showFrame(message, SettingValueFrame(self._option, Config.EMOJI_ICON.ICON_SKIP, "문제 건너뛰기 방식", "스킵 방식", OPTION_TYPE.SKIP_TYPE, 0, 1, 1), isPopUp=True) #설정창 표시
-            elif number == 3: 
+            elif number == 3:
                 await showFrame(message, SettingValueFrame(self._option, Config.EMOJI_ICON.ICON_SONG, "노래 길이", "노래 길이", OPTION_TYPE.TRIM_LENGTH, 5, 60, 5), isPopUp=True) #설정창 표시
-            elif number == 4: 
+            elif number == 4:
                 await showFrame(message, SettingValueFrame(self._option, Config.EMOJI_ICON.ICON_REPEAT, "노래 반복 재생 횟수", "반복 재생", OPTION_TYPE.REPEAT_COUNT, 1, 7, 1), isPopUp=True) #설정창 표시
-            elif number == 5: 
+            elif number == 5:
                 initOption(self._option) #option 객체 기본값으로
                 await showTop(message, selectorData) #새로고침
-        
+
 
 class SettingValueFrame(QFrame): #설정 값 변경 화면
     def __init__(self, option, icon, settingTitle, settingName, OPTION_TYPE, min, max, interval):
@@ -1595,7 +1596,7 @@ class SettingValueFrame(QFrame): #설정 값 변경 화면
 
         self._page_visible = False
         self._page_nowPage = 0
-        
+
         self._path_visible = True
         self._path_text = "설정/" + settingName +"/"
 
@@ -1618,13 +1619,13 @@ class SettingValueFrame(QFrame): #설정 값 변경 화면
         self.applyCustomSetting(message)
 
     def applyCustomSetting(self, message): #설정값으로 표시
-        
+
         self._sub_visible = True
 
         display = getDisplayOption(self._optionType, self.getValue())
 
         self._sub_text = self._icon + " "+(self._settingName)+"　**"+ chr(173) + chr(173) + chr(173) + chr(173) + chr(173) + "　"+ str(display[0]) + "**\n" + chr(173) + "\n"
-        self._sub_text += Config.EMOJI_ICON.ICON_LIST + " " + str(display[1]) + "\n" + chr(173) + "\n" #정보 표시 
+        self._sub_text += Config.EMOJI_ICON.ICON_LIST + " " + str(display[1]) + "\n" + chr(173) + "\n" #정보 표시
 
         self._notice_visible = True
 
@@ -1644,7 +1645,7 @@ class SettingValueFrame(QFrame): #설정 값 변경 화면
         return value
 
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         Config.LOGGER.info(str(user) + ", " + str(reaction.emoji))
 
         emoji = reaction.emoji # 반응한 이모지 가져오기
@@ -1688,7 +1689,7 @@ class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
 
         self._page_visible = True
         self._page_nowPage = 0
-        
+
         self._path_visible = True
 
         self._image_visible = False
@@ -1703,7 +1704,7 @@ class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
     def getMainList(self):
 
         viewPath = "패치노트/" #표시용 패스
-        
+
         allPath = self._myPath #절대 경로
 
         self._path_text = viewPath #패스 표시
@@ -1722,7 +1723,7 @@ class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
             showText = fileName #표시할 항목명
             self._absoluteMap[showText] = tmpFile #절대 이름 설정
             tmpList.append(showText)
-        
+
         self._main_text = [] #메인 텍스트 초기화
         i = len(tmpList) #역순 나열
         while i > 0:
@@ -1732,7 +1733,7 @@ class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
 
         self._notice_text = Config.EMOJI_ICON.ICON_BOX+ "　항목 수 : **" + str(len(self._absoluteMap.keys())) + "개**"
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
         emoji = reaction.emoji
@@ -1741,13 +1742,13 @@ class PathNoteSelectFrame(QFrame): #패치노트 선택 화면
 
         number = Config.getNumberFromEmoji(emoji) #이모지에 대응하는 정수값 가져옴
         if number != -1: #숫자 이모지라면
-            
+
             fileIndex = self._page_nowPage * LIST_PER_PAGE #선택한 목록의 인덱스를 가져옴
             fileIndex += number - 1
 
             if fileIndex >= len(self._main_text):
                 return
-            
+
             selectName = self._main_text[fileIndex] #선택한 항목의 표시 이름
             absoluteName = self._absoluteMap[selectName] #실제 이름 가져옴
 
@@ -1784,11 +1785,11 @@ class PatchNoteInfoFrame(QFrame):
         self._main_visible = False
 
         self._embedColor = discord.Color.dark_grey()
-        
+
         ##추가
         self._myPath = notePath
         self.loadNoteInfo()
-    
+
     def loadNoteInfo(self): #패치노트 로드
         infoPath = self._myPath
 
@@ -1804,7 +1805,7 @@ class PatchNoteInfoFrame(QFrame):
         except:
             Config.LOGGER.error("파일 로드 에러, "+infoPath)
             infoText = "패치 내역를 불러올 수 없습니다."
-        
+
         self._sub_text = infoText
 
 
@@ -1827,9 +1828,9 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         self._notice_text += Config.EMOJI_ICON.ICON_MAIL + " 이메일:　" + Config.EMAIL_ADDRESS + "\n"
         self._notice_text += Config.EMOJI_ICON.ICON_QUIZBOT + " 봇 공유링크:　"+Config.BOT_LINK + "\n"
         self._notice_text += Config.EMOJI_ICON.ICON_GIT + " 깃허브　 　:　"+"https://github.com/OtterBK/Quizbot" + "\n"
-        #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n" 
+        #self._notice_text += Config.EMOJI_ICON.ICON_GIT + " Github:　https://github.com/OtterBK/Quizbot.git\n"
         self._notice_text += chr(173) + "\n" + Config.EMOJI_ICON.ICON_FIX + "버그 제보, 개선점, 건의사항이 있다면 상단 이메일 주소로 알려주세요!\n" + chr(173) + "\n"
-    
+
 
         self._field_visible = False
 
@@ -1837,14 +1838,14 @@ class BotInfoFrame(QFrame): #봇 정보 화면
         self._customFooter_text = Config.EMOJI_ICON.ICON_VERSION + " 버전: " + Config.VERSION
 
         self._page_visible = False
-        
+
         self._path_visible = False
 
         self._image_visible = False
 
-        self._embedColor = discord.Color.magenta() 
+        self._embedColor = discord.Color.magenta()
 
-    async def action(self, reaction, user, selectorData): 
+    async def action(self, reaction, user, selectorData):
         await super().action(reaction, user, selectorData)
 
 
@@ -1867,7 +1868,7 @@ def loadOption(): #옵션 파일 로드
     multiplayOption = QOption("-1") #멀티용
     multiplayOption._hintType = 4 #멀티
     multiplayOption._skipType = 2 #사용불가
-    multiplayOption._trimLength = 35 #멀티플레이용 노래는 35초 
+    multiplayOption._trimLength = 35 #멀티플레이용 노래는 35초
     multiplayOption._repeatCount = 1
     optionMap["-1"] = multiplayOption
 
@@ -1892,7 +1893,7 @@ def loadRank(): #랭크 파일 로드
 
 def getOption(guildID): #해당 길드의 옵션파일 가져오기
     if guildID in optionMap: #이미 있다면
-        return optionMap[guildID] 
+        return optionMap[guildID]
     else:
         option = QOption(guildID) #없다면 생성 및 저장
         option.save()
@@ -1904,10 +1905,10 @@ def getScoreboard(guildID, quizName): #순위표 가져오기
     rankData = None
     if not guildID in rankMap.keys(): #랭크 데이터 없다면
         rankData = RankData(guildID) #생성후 넣기
-        rankMap[guildID] = rankData 
+        rankMap[guildID] = rankData
     else:
         rankData = rankMap[guildID]
-    
+
     localRank = rankData._localRank
     scoreboard = None
     if not quizName in localRank.keys(): #퀴즈에 맞는 순위표가 없다면
@@ -1923,10 +1924,10 @@ def getMultiplayScoreboard(quizName): #멀티용 스코어보드 가져오기
     rankData = None
     if not MULTIPLAY_RANKNAME in rankMap.keys(): #랭크 데이터 없다면
         rankData = MultiplayRankData(MULTIPLAY_RANKNAME) #생성후 넣기
-        rankMap[MULTIPLAY_RANKNAME] = rankData 
+        rankMap[MULTIPLAY_RANKNAME] = rankData
     else:
         rankData = rankMap[MULTIPLAY_RANKNAME]
-    
+
     localRank = rankData._localRank
     scoreboard = None
     if not quizName in localRank.keys(): #퀴즈에 맞는 순위표가 없다면
@@ -1960,7 +1961,7 @@ def getDisplayOption(OptionType, value): #옵션 타입과 값에 따라 적절�
             return str(value)+"초", "문제로 제시되는 음악 파일의 길이를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"문제로 제시되는 노래의 재생구간은 매번 임의로 정해지는데\n이때 노래의 재생 길이를 변경합니다.\n노래 관련 퀴즈에서만 지원하는 기능입니다."
     elif OptionType == OPTION_TYPE.REPEAT_COUNT: #반복 횟수의 경우
             return str(value)+"회", "문제로 제시되는 음악 파일의 반복 재생 횟수를 설정합니다.\n"+chr(173)+"\n"+Config.EMOJI_ICON.ICON_ALARM+"노래 관련 퀴즈에서만 지원하는 기능입니다."
-    
+
     return "존재하지 않는 설정 타입", "존재하지 않는 설정 값"
 
 def initOption(option): #옵션 초기화
@@ -1974,16 +1975,16 @@ async def clearChat(chatChannel): #메시지 삭제
 
     excludeMsg = []
     if guildID in selectorMap.keys():
-        selectorData = selectorMap[guildID]    
+        selectorData = selectorMap[guildID]
         excludeMsg.append(selectorData._selectorMessage)
-    
+
     if guildID in quizUIMap.keys():
         quizUIFrame = quizUIMap[guildID]
         excludeMsg.append(quizUIFrame._myMessage)
-    
+
     number = 500 #긁어올 메시지 개수
     def check(msg): #UI 메시지는 패스
-        return not msg in excludeMsg 
+        return not msg in excludeMsg
 
     try:
         asyncio.ensure_future(chatChannel.purge(check=check, limit=number))
@@ -1998,13 +1999,13 @@ def removeQuizUI(guild): #퀴즈 UI 프레임 삭제
 
 def isQuiz(fileName): #퀴즈 폴더인지 확인
     fileName = fileName.lower()
-    if fileName.find("&quiz") != -1: 
+    if fileName.find("&quiz") != -1:
         return True
     else:
         return False
 
 def getClockIcon(leftTime, maxTime): #시계 아이콘 반환
-    if maxTime == 0: 
+    if maxTime == 0:
         return Config.EMOJI_ICON_CLOCK_0
     clockType = int((maxTime-leftTime)/maxTime * 12)
     if clockType == 0:
@@ -2033,7 +2034,7 @@ def getClockIcon(leftTime, maxTime): #시계 아이콘 반환
         return Config.EMOJI_ICON.CLOCK_11
     elif clockType == 12:
         return Config.EMOJI_ICON.CLOCK_12
-    
+
     return Config.EMOJI_ICON.CLOCK_0
 
 
@@ -2061,7 +2062,7 @@ def getViewPath(allPath):
 
 
 async def returnToTitle(guild): #해당 서버의 퀴즈 선택 UI를 초기화
-    if not guild.id in selectorMap.keys(): 
+    if not guild.id in selectorMap.keys():
         return
     selectorData = selectorMap[guild.id]
     selectorData._frameStack = []
@@ -2071,11 +2072,11 @@ async def returnToTitle(guild): #해당 서버의 퀴즈 선택 UI를 초기화
 async def createSelectorUI(channel): #초기 UI생성
     if not isSet: return
 
-    guild = channel.guild 
+    guild = channel.guild
 
 
     quizListEmbed = discord.Embed(
-            title="초기화중... 잠시만 기다려주세요.", url=None, description="\n▽", color=discord.Color.dark_magenta())
+            title="초기화중... 잠시만 기다려주세요.", url="", description="\n▽", color=discord.Color.dark_magenta())
     quizListEmbed.set_author(name=bot.user.name,
                         icon_url=bot.user.avatar_url)
     quizListEmbed.remove_author()
@@ -2110,7 +2111,7 @@ async def createQuizUI(channel, quizPath, owner): #초기 UI생성
     if not isSet: return
 
     quizUIEmbed = discord.Embed(
-            title="곧 퀴즈가 시작됩니다.", url=None, description="\n▽", color=discord.Color.blue())
+            title="곧 퀴즈가 시작됩니다.", url="", description="\n▽", color=discord.Color.blue())
     quizUIEmbed.set_author(name=bot.user.name, url="",
                         icon_url=bot.user.avatar_url)
     quizUIEmbed.remove_author()
@@ -2159,10 +2160,10 @@ async def setFrame(message, frame): #메시지에 해당 프레임을 설정
         return False
 
     frame.paint(message) #프레임 표시 이벤트
-    selectorEmbed = getEmbedFromFrame(frame) 
+    selectorEmbed = getEmbedFromFrame(frame)
 
     try:
-        await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트 
+        await message.edit(embed=selectorEmbed) # 메시지 객체 업데이트
         return True
     except:
         Config.LOGGER.warning(traceback.format_exc())
@@ -2187,13 +2188,13 @@ async def popFrame(channel, frame): #메시지 객체와 함께 프레임 생성
     message = None
     try:
         if thumbnailFile != None: #로컬 이미지 사용시
-            message = await channel.send(file=thumbnailFile, embed=embed) # 메시지 객체 업데이트 
+            message = await channel.send(file=thumbnailFile, embed=embed) # 메시지 객체 업데이트
         else:
-            message = await channel.send(embed=embed) # 메시지 객체 업데이트 
+            message = await channel.send(embed=embed) # 메시지 객체 업데이트
     except:
         Config.LOGGER.error("메시지 에러 2")
         Config.LOGGER.error(traceback.format_exc())
-    
+
     frame.paint(message) #프레임 표시 이벤트
 
 def getEmbedFromFrame(frame): #frame으로 embed 생성
@@ -2212,11 +2213,11 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
 
     desc = chr(173)+"\n"
 
-    if frame._sub_visible: #서브 타이틀 
+    if frame._sub_visible: #서브 타이틀
         desc += chr(173)+"\n"+frame._sub_text + "\n"
         desc += chr(173)+"\n" + chr(173) + "\n"
-    
-    
+
+
     if frame._main_visible: #메인 메시지, 스크롤 방식
         pageIndex = nowPage * LIST_PER_PAGE #표시 시작할 인덱스
 
@@ -2230,7 +2231,7 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
             text = mainList[fileIndex]
             i += 1
             desc += Config.getEmojiFromNumber(i) + ")　" + str(text) + "\n" + chr(173) + "\n"
-        
+
         desc += chr(173) + "\n"
 
     if frame._notice_visible: #알림 같은것(에러 메시지 등)
@@ -2239,7 +2240,7 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
         desc += chr(173)+"\n" + chr(173) + "\n"
 
     color = frame._embedColor
-    selectorEmbed = discord.Embed(title=title, url=None, description=desc, color=color) #embed 설정
+    selectorEmbed = discord.Embed(title=title, url="", description=desc, color=color) #embed 설정
     
     if frame._field_visible: #필드부
         for field in frame._field_text.keys():

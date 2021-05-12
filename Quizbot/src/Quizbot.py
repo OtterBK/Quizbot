@@ -2478,14 +2478,28 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
     if guild.id in newGuilds:
         newGuilds.remove(guild.id)
 
+    isSuccess = False
     #퀴즈 시작
     voice = get(bot.voice_clients, guild=guild)
     if voice == None or not voice.is_connected():  # 음성 연결 안됐다면
         try:
             voice = await voiceChannel.connect()  # 음성 채널 연결후 해당 객체 반환
+            isSuccess = True
         except: #보통 Already voice connected 문제 발생시
-            asyncio.ensure_future(chattingChannel.send("❗ 예기지 못한 문제가 발생하였습니다. 재시도해주세요. 해당 문제가 지속적으로 발생할 시 \n💌 [ otter6975@gmail.com ] 으로 문의바랍니다."))
-            await voice.disconnect(True) #보이스 강제로 연결끊기
+            isSuccess = False
+            Logger.error(traceback.format_exc())
+            asyncio.ensure_future(chattingChannel.send("❗ 예기치 못한 문제가 발생하였습니다. 재시도해주세요. \n해당 문제가 지속적으로 발생할 시 \n💌 [ "+Config.EMAIL_ADDRESS+" ] 으로 문의바랍니다.\n"))
+            if voice == None:
+                asyncio.ensure_future(chattingChannel.send("voice == None"))
+            elif voice.is_connected():
+                asyncio.ensure_future(chattingChannel.send("voice is connected"))
+            await voice.move_to(voiceChannel)
+            await asyncio.sleep(1000)
+            await voice.disconnect() #보이스 강제로 연결끊기
+
+    if not isSuccess:
+        tmpVoice = get(bot.voice_clients, channel=voiceChannel)
+        tmpVoice.disconnect()
 
     quizInfoFrame._started = False
 
@@ -2627,7 +2641,7 @@ async def on_ready():
     await bot.change_presence(status=discord.Status.online) #온라인
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="!퀴즈 | !quiz"))
 
-    Config.LOGGER.info("봇 이름:" + str(bot.user.name) + ", 봇 아이디:" + str(bot.user.name) + ", 봇 버전:" + discord.__version__)
+    print("봇 이름:" + str(bot.user.name) + ", 봇 아이디:" + str(bot.user.name) + ", 봇 버전:" + discord.__version__)
     for guild in bot.guilds:
         print(guild.name)
     Config.LOGGER.info(str(len(bot.guilds)) + "개의 서버 연결됨")
@@ -2804,7 +2818,7 @@ async def on_reaction_add(reaction, user):
     #     return
 
     isAlreadyRemove = False
-    if guild.id == guildData._guildID: #반응한 서버가 퀴즈선택 메시지 있는 서버라면
+    if channel.id == guildData._selectorChannelID: #반응한 서버가 퀴즈선택 메시지 있는 서버라면
         if not isAlreadyRemove:
             try:
                 isAlreadyRemove = True
@@ -2817,16 +2831,17 @@ async def on_reaction_add(reaction, user):
         asyncio.ensure_future(ui.on_reaction_add(reaction, user)) #이벤트 동작
 
     if gameData != None and guild.id == guildData._guildID:  # 현재 게임중인 서버라면
-        if not isAlreadyRemove:
-            try:
-                isAlreadyRemove = True
-                asyncio.ensure_future(reaction.remove(user))  # 이모지 삭제, 버튼 반응 속도 개선
-            except:
-                await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
-                await channel.send(Config.BOT_LINK)
-                Config.LOGGER.error(traceback.format_exc())
-                return
-        asyncio.ensure_future(gameData.action(reaction, user) )#이벤트 동작
+        if channel.name == gameData._chatChannel.name:
+            if not isAlreadyRemove:
+                try:
+                    isAlreadyRemove = True
+                    asyncio.ensure_future(reaction.remove(user))  # 이모지 삭제, 버튼 반응 속도 개선
+                except:
+                    await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
+                    await channel.send(Config.BOT_LINK)
+                    Config.LOGGER.error(traceback.format_exc())
+                    return
+            asyncio.ensure_future(gameData.action(reaction, user) )#이벤트 동작
 
 
 
