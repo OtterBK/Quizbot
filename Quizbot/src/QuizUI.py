@@ -2261,12 +2261,6 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
                 text_footer += "　　|　　"
             text_footer += Config.EMOJI_ICON.ICON_FOLDER + " " + str(frame._path_text)
 
-    if frame._image_visible: #이미지
-        if not frame._image_local: #로컬 이미지 사용이 아니면
-            selectorEmbed.set_image(url=frame._image_url)
-
-    
-
     # embed 추가 설정
     if frame._author == None:
         selectorEmbed.set_author(name=bot.user.name, url="",
@@ -2276,6 +2270,10 @@ def getEmbedFromFrame(frame): #frame으로 embed 생성
         author = frame._author
         selectorEmbed.set_author(name=author.display_name, url="",
                         icon_url=author.avatar_url)
+
+    if frame._image_visible: #이미지
+        if not frame._image_local: #로컬 이미지 사용이 아니면
+            selectorEmbed.set_image(url=frame._image_url)
 
     selectorEmbed.set_footer(text=text_footer) #footer 설정 
 
