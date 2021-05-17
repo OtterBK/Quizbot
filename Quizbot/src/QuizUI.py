@@ -374,7 +374,7 @@ class QFrame:
         self._notice_text = "Notice" #알림
 
         self._field_visible = True #Field 표시 여부
-        self._field_text = dict() #맵에 있는 값을 차례로 표시할 거임
+        self._field_text = dict() #맵에 있는 값을 차례로 표시할 거임=
 
         self._page_visible = True #페이지 표시 옵션
         self._page_nowPage = 0 #현재 페이지 번호

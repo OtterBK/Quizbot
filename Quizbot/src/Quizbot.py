@@ -2487,14 +2487,14 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
             isSuccess = True
         except: #보통 Already voice connected 문제 발생시
             isSuccess = False
-            Logger.error(traceback.format_exc())
+            Config.LOGGER.error(traceback.format_exc())
             asyncio.ensure_future(chattingChannel.send("❗ 예기치 못한 문제가 발생하였습니다. 재시도해주세요. \n해당 문제가 지속적으로 발생할 시 \n💌 [ "+Config.EMAIL_ADDRESS+" ] 으로 문의바랍니다.\n"))
             if voice == None:
                 asyncio.ensure_future(chattingChannel.send("voice == None"))
             elif voice.is_connected():
                 asyncio.ensure_future(chattingChannel.send("voice is connected"))
             await voice.move_to(voiceChannel)
-            await asyncio.sleep(1000)
+            await asyncio.sleep(1)
             await voice.disconnect() #보이스 강제로 연결끊기
 
     if not isSuccess:
