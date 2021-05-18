@@ -2499,7 +2499,7 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
 
     if not isSuccess:
         tmpVoice = get(bot.voice_clients, channel=voiceChannel)
-        tmpVoice.disconnect()
+        await tmpVoice.disconnect()
 
     quizInfoFrame._started = False
 
