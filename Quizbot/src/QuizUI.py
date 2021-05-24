@@ -1393,7 +1393,9 @@ class MultiplayInfoFrame(QFrame):
                     matchingQueue.remove(self) #큐에서 삭제
                 voice = get(bot.voice_clients, guild=self._myMessage.channel.guild)
                 if voice and voice.is_connected():  # 해당 길드에서 음성 대화가 이미 연결된 상태라면 (즉, 누군가 퀴즈 중)
-                    await voice.disconnect()
+                    if not isConnecting: # 멀티 잡힌게 아니라면
+                        print("t1")
+                        await voice.disconnect()
                 try:
                     self._notice_text = Config.EMOJI_ICON.ICON_MULTIPLAY + "　" + self._quizName +" 카테고리를 매칭중인 서버 **" + str(len(matchingQueue)) + "개**"
                     #await self.update()

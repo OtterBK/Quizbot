@@ -2493,12 +2493,14 @@ async def startQuiz(quizInfoFrame, owner, forceStart=False): #퀴즈 시작
                 asyncio.ensure_future(chattingChannel.send("voice == None"))
             elif voice.is_connected():
                 asyncio.ensure_future(chattingChannel.send("voice is connected"))
-            await voice.move_to(voiceChannel)
+            #await voice.move_to(voiceChannel)
             await asyncio.sleep(1)
+            print("error disconnect")
             await voice.disconnect() #보이스 강제로 연결끊기
 
-    if not isSuccess:
+    if not isSuccess and not forceStart:
         tmpVoice = get(bot.voice_clients, channel=voiceChannel)
+        print("error disconnect2")
         await tmpVoice.disconnect()
 
     quizInfoFrame._started = False
