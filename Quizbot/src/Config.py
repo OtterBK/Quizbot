@@ -164,7 +164,7 @@ def __get_logger():
     # 로거 인스턴스에 핸들러 삽입
     __logger.addHandler(stream_handler)
     # 로그 레벨 정의
-    __logger.setLevel(logging.ERROR)
+    __logger.setLevel(logging.INFO)
 
     return __logger
 

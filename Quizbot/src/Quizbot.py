@@ -1846,7 +1846,7 @@ class MultiplayQuiz(Quiz): #멀티플레이 퀴즈
         #인원 수 표시 재설정
         try:
             self._quizUIFrame._notice_visible = True
-            self._quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._targetData._guild.name) + " / "+ str(len(self._targetData._voice.channel.voice_states)-1) + "명"+"**\n" + chr(173) + "\n"
+            self._quizUIFrame._notice_text = Config.EMOJI_ICON.ICON_FIGHT + " 대전 상대: **" + str(self._targetData._guild.name) + " / "+ str(len(self._targetData._voice.channel.voice_states)-1) + "명"+"** ["+str(self._targetData._guild.id)+"]\n" + chr(173) + "\n"
             self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_CHAT+" !챗 <메세지>　"+chr(173)+" - 　서버간 메시지를 전송합니다.\n" + chr(173) + "\n"
             self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_SPEAKER_HIGH+" !보이스동기화　"+chr(173)+"-　노래 싱크 동기화 기능을 활성/비활성 합니다.\n"
             self._quizUIFrame._notice_text += Config.EMOJI_ICON.ICON_WARN+" 기본값은 활성이며 비활성시 보이스 재연결을 하지 않습니다.\n재연결 알림소리가 거슬리면 비활성화 해주세요.\n"
@@ -2634,6 +2634,29 @@ async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 �
         asyncio.ensure_future(channel.send("```"+ chr(173) + "\n" +str(notice) +"\n"+ chr(173) + "\n"+"```"))
 
 
+async def checkBan(guild):
+
+    if guild == None: return
+
+    guildName = guild.name.strip()
+    guildID = guild.id
+
+    try:
+        f = open(Config.DATA_PATH+"banlist"+str(noticeIndex)+".txt", 'r', encoding="utf-8" ) #공지
+        while True:
+            line = f.readline()
+            if not line:
+                break
+
+            banlist += line.strip()
+        f.close()
+
+    except:
+        Config.LOGGER.error("벤리스트 로드 에러")
+        
+
+    if guildName in banList or guildID in banlist: #벤
+        return
 
 
 # 봇이 접속(활성화)하면 아래의 함수를 실행하게 된다, 이벤트
@@ -2745,6 +2768,9 @@ async def skipCommand(ctx):  # 수동 힌트
 async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
     if gamesrc == None:
         guild = ctx.guild #서버
+
+        checkBan(guild) # 벤체크
+
         guildData = getGuildData(guild) #길드 데이터 없으면 초기화
 
         try:
