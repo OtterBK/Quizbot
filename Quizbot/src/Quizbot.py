@@ -2634,29 +2634,32 @@ async def showNotice(channel, noticeIndex=1): #공지 표시, noticeIndex 는 �
         asyncio.ensure_future(channel.send("```"+ chr(173) + "\n" +str(notice) +"\n"+ chr(173) + "\n"+"```"))
 
 
-async def checkBan(guild):
+def checkBan(guild):
 
     if guild == None: return
 
-    guildName = guild.name.strip()
-    guildID = guild.id
+    guildName = str(guild.name.strip())
+    guildID = str(guild.id)
+    banlist = []
 
     try:
-        f = open(Config.DATA_PATH+"banlist"+str(noticeIndex)+".txt", 'r', encoding="utf-8" ) #공지
+        f = open(Config.DATA_PATH+"banlist.txt", 'r', encoding="utf-8" ) #공지
         while True:
             line = f.readline()
             if not line:
                 break
 
-            banlist += line.strip()
+            banlist.append(line.strip())
         f.close()
 
     except:
         Config.LOGGER.error("벤리스트 로드 에러")
-        
 
-    if guildName in banList or guildID in banlist: #벤
-        return
+
+    if guildName in banlist or guildID in banlist: #벤
+        return True
+    else:
+        return False
 
 
 # 봇이 접속(활성화)하면 아래의 함수를 실행하게 된다, 이벤트
@@ -2763,13 +2766,19 @@ async def skipCommand(ctx):  # 수동 힌트
         gameData = guildData._gameData
         await gameData._quizUIFrame.skipAction(ctx.message.author, ctx.message)
 
+@bot.command(pass_context=False, aliases=["서버아이디"])  # 수동  스킵 명령어 입력시
+async def idCommand(ctx):  # 수동 힌트
+    await ctx.send(str(ctx.guild.id))
+
 
 @bot.command(pass_context=False, aliases=["quiz", "QUIZ", "퀴즈", "ㅋㅈ"])  # quiz 명령어 입력시
 async def quizCommand(ctx, gamesrc=None):  # 퀴즈봇 UI 생성
     if gamesrc == None:
         guild = ctx.guild #서버
 
-        checkBan(guild) # 벤체크
+        if(checkBan(guild)): # 벤체크
+            Config.LOGGER.error("벤 된 서버: "+str(guild.id)+"에서 접근 실패")
+            return
 
         guildData = getGuildData(guild) #길드 데이터 없으면 초기화
 
@@ -2852,7 +2861,7 @@ async def on_reaction_add(reaction, user):
                 isAlreadyRemove = True
                 asyncio.ensure_future(reaction.remove(user))  # 이모지 삭제, 버튼 반응 속도 개선
             except:
-                asyncio.ensure_future(hannel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" ))
+                asyncio.ensure_future(hannel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 적절한 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" ))
                 asyncio.ensure_future(channel.send(Config.BOT_LINK))
                 Config.LOGGER.error(traceback.format_exc())
                 return
@@ -2865,7 +2874,7 @@ async def on_reaction_add(reaction, user):
                     isAlreadyRemove = True
                     asyncio.ensure_future(reaction.remove(user))  # 이모지 삭제, 버튼 반응 속도 개선
                 except:
-                    await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 관리자 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
+                    await channel.send("```" + chr(173) + "\n" + Config.EMOJI_ICON.ICON_WARN + " 권한이 부족합니다.\n퀴즈봇 사용을 위해서는 적절한 권한이 필요합니다.\n관리자 권한을 가진 유저에게 퀴즈봇을 추가해달라고 요청하세요.\n" + chr(173) + "```" )
                     await channel.send(Config.BOT_LINK)
                     Config.LOGGER.error(traceback.format_exc())
                     return

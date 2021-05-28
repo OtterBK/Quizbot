@@ -1993,6 +1993,7 @@ async def clearChat(chatChannel): #메시지 삭제
     except:
         Config.LOGGER.error("clearchat error")
         Config.LOGGER.error(traceback.format_exc())
+        await chatChannel.send("```메시지 청소에 실패했습니다. 권한이 부족하여 발생하는 문제일 가능성이 높습니다.\n봇을 추방한 뒤 다시 서버에 초대하여 권한을 부여하세요.```")
 
 
 def removeQuizUI(guild): #퀴즈 UI 프레임 삭제
