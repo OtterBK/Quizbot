@@ -2240,8 +2240,7 @@ newGuilds = []
 ########################
 
 
-bot = commands.Bot(command_prefix=Config.BOT_PREFIX)  # 봇 커맨드 설정
-
+bot = commands.AutoShardedBot(shard_count=10, command_prefix=Config.BOT_PREFIX)  # 봇 커맨드 설정, 샤딩
 #Utility
 async def fadeIn(voice):
     if not voice.is_playing(): #보이스 재생중아니면
