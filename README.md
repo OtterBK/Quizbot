@@ -1,5 +1,7 @@
 <div align=center>
 
+##### 📄 해당 프로젝트는 퀴즈봇3 프로젝트로 이전 되었습니다.<br>https://github.com/OtterBK/Quizbot3
+
 ![MainIMG](https://user-images.githubusercontent.com/28488288/106536426-c48d4300-653b-11eb-97ee-445ba6bced9b.jpg)
 
 </div>
