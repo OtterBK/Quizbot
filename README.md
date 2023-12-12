@@ -22,7 +22,7 @@
 
 <div align=center>
   
-[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://koreanbots.dev/bots/788060831660114012)](https://koreanbots.dev/bots/788060831660114012)&nbsp;&nbsp;&nbsp;<br>
+[![DISCORD](http://img.shields.io/badge/-Discord-gray?style=for-the-badge&logo=discord&link=https://discord.com/application-directory/788060831660114012)](https://koreanbots.dev/bots/788060831660114012)&nbsp;&nbsp;&nbsp;<br>
 
 ☝ 퀴즈봇 추가하기 
 </div>
